@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.0-beta.2](https://github.com/S0lidByte/triven-frontend/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2026-02-27)
+
+
+### Bug Fixes
+
+* **auth:** revert strict URL validation on image field to fix registration ([47787a3](https://github.com/S0lidByte/triven-frontend/commit/47787a32af1131cac580b2eae5b578ea058f3350))
+* **ci:** trigger workflow with synced release manifests ([c1e7c0f](https://github.com/S0lidByte/triven-frontend/commit/c1e7c0f496925426a7d914fdba6cd1a5513b4797))
+
 ## [1.0.0-beta.1](https://github.com/S0lidByte/triven-frontend/compare/v1.0.0-beta.0...v1.0.0-beta.1) (2026-02-27)
 
 
