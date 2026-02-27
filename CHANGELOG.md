@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1-beta.2](https://github.com/S0lidByte/triven-frontend/compare/v1.1.1-beta.1...v1.1.1-beta.2) (2026-02-27)
+
+
+### Miscellaneous Chores
+
+* clear tag v1.1.0-beta.0 collision ([09a59ff](https://github.com/S0lidByte/triven-frontend/commit/09a59fffda4412b01a81e4d7b9667fd935740c86))
+
 ## [1.1.1-beta.1](https://github.com/S0lidByte/triven-frontend/compare/v1.1.1-beta.0...v1.1.1-beta.1) (2026-02-27)
 
 
