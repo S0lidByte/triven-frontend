@@ -45,7 +45,7 @@ jobs:
               uses: docker/metadata-action@v5
               with:
                   images: |
-                      ghcr.io/rivenmedia/riven-frontend
+                      ghcr.io/${{ github.repository }}
                       coldspirit/triven-frontend
                   flavor: |
                       latest=auto
