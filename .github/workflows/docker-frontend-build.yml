@@ -46,7 +46,7 @@ jobs:
               with:
                   images: |
                       ghcr.io/rivenmedia/riven-frontend
-                      docker.io/spoked/riven-frontend
+                      coldspirit/triven-frontend
                   flavor: |
                       latest=auto
                   tags: |
