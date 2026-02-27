@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0-beta.1](https://github.com/S0lidByte/triven-frontend/compare/v1.0.0-beta.0...v1.0.0-beta.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* **ci:** sync release-manifest.json version to 1.1.1-beta.3 ([5a80c36](https://github.com/S0lidByte/triven-frontend/commit/5a80c36c650b12703f9161d9226c50e27248d48e))
+
 ## [1.0.0-beta.0](https://github.com/S0lidByte/triven-frontend/compare/v1.1.1-beta.4...v1.0.0-beta.0) (2026-02-27)
 
 
