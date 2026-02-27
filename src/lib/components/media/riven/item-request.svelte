@@ -83,11 +83,13 @@
                 }
             } else {
                 // Fallback to original add logic for movies or if all/no seasons selected
+                const extIds = externalId ? [externalId] : validIds;
+                
                 const response = await providers.riven.POST("/api/v1/items/add", {
                     body: {
                         media_type: mediaType as "movie" | "tv",
-                        tmdb_ids: mediaType === "movie" ? validIds : [],
-                        tvdb_ids: mediaType === "tv" ? validIds : []
+                        tmdb_ids: mediaType === "movie" ? extIds : [],
+                        tvdb_ids: mediaType === "tv" ? extIds : []
                     }
                 });
 
