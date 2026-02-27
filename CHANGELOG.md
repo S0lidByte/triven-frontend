@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0-beta.5](https://github.com/S0lidByte/triven-frontend/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2026-02-27)
+
+
+### Bug Fixes
+
+* **frontend:** require valid url or empty string for avatar image in registration schema to prevent 404s ([df435e8](https://github.com/S0lidByte/triven-frontend/commit/df435e8ecfe2fe7c813b22f5c73c7b47ce607aea))
+
 ## [1.0.0-beta.4](https://github.com/S0lidByte/triven-frontend/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2026-02-27)
 
 
