@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.1.1-beta.1](https://github.com/S0lidByte/triven-frontend/compare/v1.1.1-beta.0...v1.1.1-beta.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* trigger actions ([527e358](https://github.com/S0lidByte/triven-frontend/commit/527e358312e90f9f55a9b9dd34be8f6c8e630b5e))
+
+
+### Miscellaneous Chores
+
+* flush release-please branches ([4502d5a](https://github.com/S0lidByte/triven-frontend/commit/4502d5a494f0da6f78d6af988712fe5de3f7d3b4))
+* **main:** release 1.0.0-beta.0 ([5e828c6](https://github.com/S0lidByte/triven-frontend/commit/5e828c615cbed57ba1ffb0fd37190c795c04528c))
+* **main:** release 1.0.0-beta.0 ([d968c1c](https://github.com/S0lidByte/triven-frontend/commit/d968c1c59b115bbdaa45be81fce6b2a2948e5041))
+* **main:** release 1.0.0-beta.0 ([b2ff9e8](https://github.com/S0lidByte/triven-frontend/commit/b2ff9e8612ba20e2e4403562ce188f9fea881836))
+* **main:** release 1.0.0-beta.0 ([78dd0b2](https://github.com/S0lidByte/triven-frontend/commit/78dd0b2865631f044921b10872880913103740d2))
+* **main:** release 1.0.0-beta.1 ([1b700d2](https://github.com/S0lidByte/triven-frontend/commit/1b700d290828688a18df8bb5c95d6c0b76c9c953))
+* **main:** release 1.0.0-beta.1 ([0bcf122](https://github.com/S0lidByte/triven-frontend/commit/0bcf1228246282c347016805b0f332f26902c112))
+* **main:** release 1.0.0-beta.7 ([93d62e1](https://github.com/S0lidByte/triven-frontend/commit/93d62e118576c7662d133242d8292f923edcad2b))
+* **main:** release 1.0.0-beta.7 ([74e53f2](https://github.com/S0lidByte/triven-frontend/commit/74e53f2df1c19c2efb0c9282368773d732f48e9a))
+* **main:** release 1.0.0-beta.7 ([c2fb858](https://github.com/S0lidByte/triven-frontend/commit/c2fb8584b1e4d2b7486539664f4ad733bbccfb08))
+* **main:** release 1.1.2-beta.0 ([ed77673](https://github.com/S0lidByte/triven-frontend/commit/ed776738e2b9893b97c4525e28d4ba4f3eafbce6))
+* sync release-please manifest with package.json version ([3915e51](https://github.com/S0lidByte/triven-frontend/commit/3915e51ab945ce02d99a68cc96957673f75880da))
+* trigger release-please ([87cbe40](https://github.com/S0lidByte/triven-frontend/commit/87cbe403e136857a6ce7dede7d19fc9e7f135767))
+
 ## [1.0.0-beta.0](https://github.com/S0lidByte/triven-frontend/compare/v1.1.2-beta.0...v1.0.0-beta.0) (2026-02-27)
 
 
