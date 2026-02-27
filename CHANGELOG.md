@@ -1,5 +1,83 @@
 # Changelog
 
+## [1.0.0-beta.1](https://github.com/S0lidByte/triven-frontend/compare/v1.0.0-beta.0...v1.0.0-beta.1) (2026-02-27)
+
+
+### Features
+
+* add catppuccin theme ([#286](https://github.com/S0lidByte/triven-frontend/issues/286)) ([5d1e8f2](https://github.com/S0lidByte/triven-frontend/commit/5d1e8f2958d7c5b0f71bbd406b466d6eb2613836))
+* add custom fetch to support retries on failure and auth improvements & fixes ([#277](https://github.com/S0lidByte/triven-frontend/issues/277)) ([1641b72](https://github.com/S0lidByte/triven-frontend/commit/1641b72cfd52b84f531901039d668f9b40b7b5cf))
+* add custom title and IMDB ID input fields for manual scraping ([#287](https://github.com/S0lidByte/triven-frontend/issues/287)) ([d93ee74](https://github.com/S0lidByte/triven-frontend/commit/d93ee74815b37188983686baf638560ed4bd2c3f))
+* add HLS streaming support ([a79711b](https://github.com/S0lidByte/triven-frontend/commit/a79711bf47bdb7eb42148c873741ac5f8eb52eb0))
+* add raw riven data button on media page ([#256](https://github.com/S0lidByte/triven-frontend/issues/256)) ([f1fd684](https://github.com/S0lidByte/triven-frontend/commit/f1fd6848fbda0a158d3a8f412542c3f0d7c0bd20))
+* generic oauth2 ([#281](https://github.com/S0lidByte/triven-frontend/issues/281)) ([#282](https://github.com/S0lidByte/triven-frontend/issues/282)) ([eea412b](https://github.com/S0lidByte/triven-frontend/commit/eea412b40c5bb1765573afa7b83917dedd53836a))
+* implement a modern design, extensive use of themes ([#295](https://github.com/S0lidByte/triven-frontend/issues/295)) ([4722e5d](https://github.com/S0lidByte/triven-frontend/commit/4722e5dc82d8b5bec93e2f9f2cbd0640e0533276))
+* implement batched IMDb title fetching ([#283](https://github.com/S0lidByte/triven-frontend/issues/283)) ([326c9f5](https://github.com/S0lidByte/triven-frontend/commit/326c9f5025a7262e4ada50bd476952ef7b76f20b))
+* manual scraping ([#280](https://github.com/S0lidByte/triven-frontend/issues/280)) ([57e9d37](https://github.com/S0lidByte/triven-frontend/commit/57e9d37e4d3547b4d793249220d09ae4edec3610))
+
+
+### Bug Fixes
+
+* calendar current page date ([1876a43](https://github.com/S0lidByte/triven-frontend/commit/1876a4346128710cd6106328f4207d438170982b))
+* change random avatar generator link ([d1a6b2c](https://github.com/S0lidByte/triven-frontend/commit/d1a6b2c235237128395a45ae1046b384cdbf5a4a))
+* cookie package override to 0.7.0 ([40d6230](https://github.com/S0lidByte/triven-frontend/commit/40d62306d8f275d4e7085512e10a28c5093c97cf))
+* disable preload on settings temporarily ([bfc0980](https://github.com/S0lidByte/triven-frontend/commit/bfc09801d14f19b08627c86f5c416799c0883080))
+* docker build failure ([a320b84](https://github.com/S0lidByte/triven-frontend/commit/a320b84f22c18960a1987c3ba672851f1e291f76))
+* **frontend:** require valid url or empty string for avatar image in registration schema to prevent 404s ([df435e8](https://github.com/S0lidByte/triven-frontend/commit/df435e8ecfe2fe7c813b22f5c73c7b47ce607aea))
+* **frontend:** use externalId instead of internal DB id for ItemRequest ([6c2f0c5](https://github.com/S0lidByte/triven-frontend/commit/6c2f0c5a2f3e88425a5ae669cf56033f585bf9fe))
+* handle trakt duplicate issue ([807dc59](https://github.com/S0lidByte/triven-frontend/commit/807dc59420d6e192d52b39580fb161c4cc10d66d))
+* improve logging ([38463f6](https://github.com/S0lidByte/triven-frontend/commit/38463f6da89589bc1c790c170bb5e4b6acb4614d))
+* minor log improvements ([d3778ac](https://github.com/S0lidByte/triven-frontend/commit/d3778ac851260dfdd0f0370eb5ad0eba62b17bd2))
+* SSE fixes and improvements ([01735ba](https://github.com/S0lidByte/triven-frontend/commit/01735ba89ca82621494f28dc6710abed1e668f53))
+* trigger actions ([527e358](https://github.com/S0lidByte/triven-frontend/commit/527e358312e90f9f55a9b9dd34be8f6c8e630b5e))
+* use @internationalized/date wherever possible instead of native date ([6478695](https://github.com/S0lidByte/triven-frontend/commit/6478695f3e345f1bc81e084a9edad0daed5f7762))
+
+
+### Code Refactoring
+
+* improve the list & poster cache logic, utilize PersistedState rune and other improvements ([890bbfe](https://github.com/S0lidByte/triven-frontend/commit/890bbfe952b30f56919b9aea8668d28475cd4933))
+* parser improvements ([4caf36a](https://github.com/S0lidByte/triven-frontend/commit/4caf36af86e4b2faf333dee934da77629644889f))
+
+
+### Miscellaneous Chores
+
+* flush release-please branches ([4502d5a](https://github.com/S0lidByte/triven-frontend/commit/4502d5a494f0da6f78d6af988712fe5de3f7d3b4))
+* format ([2702e90](https://github.com/S0lidByte/triven-frontend/commit/2702e90e13893b422dd97af0f5a40ab3ad916ca8))
+* **main:** release 1.0.0-beta.0 ([b2ff9e8](https://github.com/S0lidByte/triven-frontend/commit/b2ff9e8612ba20e2e4403562ce188f9fea881836))
+* **main:** release 1.0.0-beta.0 ([78dd0b2](https://github.com/S0lidByte/triven-frontend/commit/78dd0b2865631f044921b10872880913103740d2))
+* **main:** release 1.0.0-beta.0 ([0314742](https://github.com/S0lidByte/triven-frontend/commit/0314742186bd1a31f888bc1e382a8fd2877c1c0a))
+* **main:** release 1.0.0-beta.0 ([f614b03](https://github.com/S0lidByte/triven-frontend/commit/f614b03704f084129c463cddb704f9c9d76fe2d4))
+* **main:** release 1.0.0-beta.1 ([#272](https://github.com/S0lidByte/triven-frontend/issues/272)) ([0aab47a](https://github.com/S0lidByte/triven-frontend/commit/0aab47a1165a7dc783e7b4f81e0e5b7a01bc5a22))
+* **main:** release 1.0.0-beta.2 ([#274](https://github.com/S0lidByte/triven-frontend/issues/274)) ([bb75996](https://github.com/S0lidByte/triven-frontend/commit/bb75996d1aaf8d5bda2d6ae69be26056f4723293))
+* **main:** release 1.0.0-beta.3 ([#278](https://github.com/S0lidByte/triven-frontend/issues/278)) ([807624a](https://github.com/S0lidByte/triven-frontend/commit/807624ac4fb4771bbe98a68b5db2c2c9e393547d))
+* **main:** release 1.0.0-beta.4 ([3dcc73a](https://github.com/S0lidByte/triven-frontend/commit/3dcc73adf91ee1d9bcf8812f9118de26331e9ce5))
+* **main:** release 1.0.0-beta.4 ([a5fa203](https://github.com/S0lidByte/triven-frontend/commit/a5fa2037b04061bd13472f963a848487973c3a8b))
+* **main:** release 1.0.0-beta.5 ([1ee78cf](https://github.com/S0lidByte/triven-frontend/commit/1ee78cf64da280093e815529d5db285c9281cc5a))
+* **main:** release 1.0.0-beta.5 ([9a4a9a3](https://github.com/S0lidByte/triven-frontend/commit/9a4a9a3ab19a7d8ab0ad5f57d24bca20e961e0c0))
+* **main:** release 1.0.0-beta.6 ([b677c19](https://github.com/S0lidByte/triven-frontend/commit/b677c194e239301082dbd792aef13ada42d44b1a))
+* **main:** release 1.0.0-beta.6 ([c82e071](https://github.com/S0lidByte/triven-frontend/commit/c82e071724221cd26b921616e1bb4e5a128e33ff))
+* **main:** release 1.0.0-beta.7 ([93d62e1](https://github.com/S0lidByte/triven-frontend/commit/93d62e118576c7662d133242d8292f923edcad2b))
+* **main:** release 1.0.0-beta.7 ([74e53f2](https://github.com/S0lidByte/triven-frontend/commit/74e53f2df1c19c2efb0c9282368773d732f48e9a))
+* **main:** release 1.0.0-beta.7 ([c2fb858](https://github.com/S0lidByte/triven-frontend/commit/c2fb8584b1e4d2b7486539664f4ad733bbccfb08))
+* **main:** release 1.1.0-beta.0 ([8b1b7a9](https://github.com/S0lidByte/triven-frontend/commit/8b1b7a97f18d8c1b89bfef4d2d15f807425c859e))
+* **main:** release 1.1.0-beta.0 ([0e8e9e9](https://github.com/S0lidByte/triven-frontend/commit/0e8e9e991afcf69d14a89b89aa177021105912b2))
+* **main:** release 1.1.1-beta.0 ([e4e82c4](https://github.com/S0lidByte/triven-frontend/commit/e4e82c4a01fd7ca7c4172ea55d997bee69fab1d8))
+* **main:** release 1.1.1-beta.0 ([655144f](https://github.com/S0lidByte/triven-frontend/commit/655144fdbacb6570a06b5fea3443cc0be892070a))
+* **main:** release 1.1.2-beta.0 ([ed77673](https://github.com/S0lidByte/triven-frontend/commit/ed776738e2b9893b97c4525e28d4ba4f3eafbce6))
+* trigger release-please ([87cbe40](https://github.com/S0lidByte/triven-frontend/commit/87cbe403e136857a6ce7dede7d19fc9e7f135767))
+
+
+### Build System and Dependencies
+
+* build docker image ([a7b8b01](https://github.com/S0lidByte/triven-frontend/commit/a7b8b0196d9e1d181af543a14cac561a54811291))
+* **deps-dev:** bump @sveltejs/kit from 2.49.2 to 2.49.5 ([#296](https://github.com/S0lidByte/triven-frontend/issues/296)) ([3477a58](https://github.com/S0lidByte/triven-frontend/commit/3477a58c2915b44dc970d9742552e506791b2a8d))
+* **deps-dev:** bump svelte from 5.46.1 to 5.46.4 ([#297](https://github.com/S0lidByte/triven-frontend/issues/297)) ([ed39458](https://github.com/S0lidByte/triven-frontend/commit/ed39458be95b5e9b0be7a70df18b091db32b7ba4))
+* trying to fix the pre-release to release workflow ([3dd6868](https://github.com/S0lidByte/triven-frontend/commit/3dd6868b79308decbe2836f4b7bfd445a8a830ee))
+* update api endpoints spec ([f25f491](https://github.com/S0lidByte/triven-frontend/commit/f25f491b756141349d04a199767705021e339f0c))
+* update backend api spec ([0d1cfb4](https://github.com/S0lidByte/triven-frontend/commit/0d1cfb45d9be8bf2bc8ae5fd18ac041ffa5db946))
+* update deps ([516c5e6](https://github.com/S0lidByte/triven-frontend/commit/516c5e60a1cdcb27c8437537ba89c66ea4d03cbb))
+* update deps ([4513a83](https://github.com/S0lidByte/triven-frontend/commit/4513a83d1e7d0eb94184045341813d6a92f52c1d))
+
 ## [1.0.0-beta.0](https://github.com/S0lidByte/triven-frontend/compare/v1.0.0-beta.7...v1.0.0-beta.0) (2026-02-27)
 
 
