@@ -4,6 +4,7 @@
     import * as Dialog from "$lib/components/ui/dialog/index.js";
     import ChevronLeft from "@lucide/svelte/icons/chevron-left";
     import ChevronRight from "@lucide/svelte/icons/chevron-right";
+    import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
     import Film from "@lucide/svelte/icons/film";
     import Tv from "@lucide/svelte/icons/tv";
     import type { PageData } from "./$types";
@@ -15,6 +16,8 @@
     import PageShell from "$lib/components/page-shell.svelte";
     import { fly } from "svelte/transition";
     import { cubicOut } from "svelte/easing";
+    import { goto } from "$app/navigation";
+    import { page } from "$app/stores";
 
     let { data }: { data: PageData } = $props();
     const isMobile = $state(new IsMobile(1280));
@@ -28,6 +31,7 @@
         season?: number;
         episode?: number;
         last_state?: string;
+        release_data?: { next_aired?: string; nextAired?: string; last_aired?: string; lastAired?: string; };
     }
 
     const monthNames = [
@@ -48,24 +52,54 @@
     const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     const todayDate = dateUtils.getToday();
-    let currentDate = $state<CalendarDate>(todayDate);
+    const cYearParam = $derived($page.url.searchParams.get("year"));
+    const cMonthParam = $derived($page.url.searchParams.get("month"));
+    
+    let currentDate = $derived.by(() => {
+        if (cYearParam && cMonthParam) {
+            return new CalendarDate(parseInt(cYearParam, 10), parseInt(cMonthParam, 10), 1);
+        }
+        return todayDate;
+    });
+
+    let isNavigating = $state(false);
+
     let showMovies = $state(true);
     let showEpisodes = $state(true);
     let showShows = $state(true);
     let showSeasons = $state(true);
 
+    function resolveCalendarDate(item: EntertainmentItem) {
+        const aired = dateUtils.parseISODate(item.aired_at);
+        
+        if (item.item_type === "show") {
+            if (aired && Math.abs(dateUtils.differenceInMonths(todayDate, aired)) <= 6) {
+                return aired;
+            }
+            if (!item.release_data) {
+                console.warn(`Calendar: Show ${item.show_title} is missing release_data`);
+                return null;
+            }
+            
+            const nextAiredStr = item.release_data.next_aired || item.release_data.nextAired || item.release_data.last_aired || item.release_data.lastAired;
+            if (nextAiredStr) {
+                return dateUtils.parseISODate(nextAiredStr);
+            }
+            return null;
+        }
+        return aired;
+    }
+
     const itemsByDate = $derived.by(() => {
         const items: EntertainmentItem[] = data.calendar?.data
-            ? Object.values(data.calendar.data).flatMap((dateItems) =>
-                  Object.values(dateItems as unknown as Record<string, EntertainmentItem>)
-              )
+            ? Object.values(data.calendar.data as unknown as Record<string, EntertainmentItem>)
             : [];
 
         const result: Record<string, EntertainmentItem[]> = {};
 
         items.forEach((item) => {
-            if (!item || !item.aired_at) return;
-            const date = dateUtils.parseISODate(item.aired_at);
+            if (!item) return;
+            const date = resolveCalendarDate(item);
             if (!date) return;
             const dateKey = dateUtils.toISODate(date);
             if (!result[dateKey]) {
@@ -136,16 +170,36 @@
         return days;
     });
 
-    function navigateMonth(direction: "prev" | "next") {
-        if (direction === "prev") {
-            const newMonth = currentDate.month === 1 ? 12 : currentDate.month - 1;
-            const newYear = currentDate.month === 1 ? currentDate.year - 1 : currentDate.year;
-            currentDate = new CalendarDate(newYear, newMonth, 1);
-        } else {
-            const newMonth = currentDate.month === 12 ? 1 : currentDate.month + 1;
-            const newYear = currentDate.month === 12 ? currentDate.year + 1 : currentDate.year;
-            currentDate = new CalendarDate(newYear, newMonth, 1);
+    const upcomingItems = $derived.by(() => {
+        const allItems = [];
+        for (const [dateKey, items] of Object.entries(filteredItemsByDate)) {
+            const date = dateUtils.parseISODate(dateKey);
+            if (date && date.compare(todayDate) >= 0) {
+                allItems.push(...items.map(item => ({ item, dateKey, date })));
+            }
         }
+        // Extract 15 coming items sorted by date to support the strip overlay
+        return allItems.sort((a, b) => a.date.compare(b.date)).slice(0, 15);
+    });
+
+    function navigateMonth(direction: "prev" | "next") {
+        if (isNavigating) return;
+        isNavigating = true;
+        
+        let newMonth;
+        let newYear;
+        
+        if (direction === "prev") {
+            newMonth = currentDate.month === 1 ? 12 : currentDate.month - 1;
+            newYear = currentDate.month === 1 ? currentDate.year - 1 : currentDate.year;
+        } else {
+            newMonth = currentDate.month === 12 ? 1 : currentDate.month + 1;
+            newYear = currentDate.month === 12 ? currentDate.year + 1 : currentDate.year;
+        }
+        
+        goto(`?year=${newYear}&month=${newMonth}`, { keepFocus: true }).catch(() => {}).finally(() => {
+            isNavigating = false;
+        });
     }
 
     function formatDayTitle(date: CalendarDate) {
@@ -170,9 +224,14 @@
 {/snippet}
 
 {#snippet entertainmentItem(item: EntertainmentItem, compact = false)}
+    {@const itemDate = resolveCalendarDate(item)}
+    {@const diffDays = itemDate ? dateUtils.differenceInDays(itemDate, todayDate) : null}
+    {@const isPastUncompleted = diffDays !== null && diffDays < 0 && item.last_state !== "Completed"}
+    {@const isSeriesPremiere = item.item_type === "episode" && item.episode === 1 && item.season === 1}
+    {@const isSeasonPremiere = item.item_type === "episode" && item.episode === 1 && item.season && item.season > 1}
     <div
         class={cn(
-            "flex items-center rounded transition-colors",
+            "flex items-center rounded transition-colors relative",
             compact ? "gap-1 truncate p-1" : "gap-3 p-2",
             item.item_type === "episode"
                 ? [
@@ -198,6 +257,10 @@
         title={compact
             ? `${item.show_title}${item.season ? ` S${item.season}E${item.episode}` : ""}`
             : undefined}>
+        
+        {#if isPastUncompleted}
+            <TriangleAlert class="absolute right-1 top-1 h-3 w-3 text-red-500 opacity-80" />
+        {/if}
         {@render itemIcon(item, compact ? 3 : 4)}
 
         <div class="min-w-0 flex-1">
@@ -210,19 +273,16 @@
                     {/if}
                 {/if}
             </div>
-            {#if item.season && !compact}
+            
+            {#if isSeriesPremiere || isSeasonPremiere}
+                <div class="inline-block rounded bg-primary/20 px-1 py-[1px] text-[10px] font-bold uppercase text-primary mb-1 mt-[2px]">
+                    {isSeriesPremiere ? "Series Premiere" : "Season Premiere"}
+                </div>
+            {/if}
+            
+            {#if item.season && !compact && !isSeriesPremiere && !isSeasonPremiere}
                 <div class="text-muted-foreground text-xs">
-                    {#if compact}
-                        S{item.season}
-                        {#if item.episode}
-                            E{item.episode}
-                        {/if}
-                    {:else}
-                        Season {item.season}
-                        {#if item.episode}
-                            , Episode {item.episode}
-                        {/if}
-                    {/if}
+                    Season {item.season}, Episode {item.episode}
                 </div>
             {/if}
         </div>
@@ -304,7 +364,14 @@
 {/snippet}
 
 <PageShell class="h-full w-full">
-    <Card.Root class="mb-4 md:mb-6">
+    <Card.Root class="mb-4 md:mb-6 relative overflow-hidden">
+        {#if isNavigating}
+            <div
+                class="absolute inset-0 z-50 flex items-center justify-center bg-background/40 backdrop-blur-sm"
+            >
+                <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+            </div>
+        {/if}
         <Card.Header class="pb-4">
             <div class="flex items-center justify-between">
                 <Button variant="outline" size="sm" onclick={() => navigateMonth("prev")}>
@@ -372,6 +439,23 @@
                 </div>
             </div>
         </Card.Header>
+
+        {#if upcomingItems.length > 0}
+            <div class="border-y bg-muted/20 px-4 py-3 lg:px-6">
+                <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Next Up</h3>
+                <div class="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                    {#each upcomingItems as { item, dateKey } (item.item_id)}
+                        {@const diffDays = dateUtils.differenceInDays(dateUtils.parseISODate(dateKey)!, todayDate)}
+                        <div class="min-w-[280px] max-w-[280px] flex-shrink-0 rounded-md border bg-card p-3 shadow-sm transition-shadow hover:shadow-md">
+                            <div class="mb-2 text-xs font-bold uppercase text-primary">
+                                {diffDays === 0 ? "Today" : diffDays === 1 ? "Tomorrow" : `In ${diffDays} days`}
+                            </div>
+                            {@render entertainmentItem(item, false)}
+                        </div>
+                    {/each}
+                </div>
+            </div>
+        {/if}
 
         <Card.Content class="p-2 lg:p-4">
             {#if isMobile.current}

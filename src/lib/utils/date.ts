@@ -237,6 +237,23 @@ export function addDays(date: CalendarDate, days: number): CalendarDate {
 }
 
 /**
+ * Calculate difference in days between two dates (date1 - date2)
+ */
+export function differenceInDays(date1: CalendarDate, date2: CalendarDate): number {
+    const nativeDate1 = new Date(date1.year, date1.month - 1, date1.day);
+    const nativeDate2 = new Date(date2.year, date2.month - 1, date2.day);
+    const diffTime = nativeDate1.getTime() - nativeDate2.getTime();
+    return Math.round(diffTime / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Calculate difference in months between two dates (date1 - date2)
+ */
+export function differenceInMonths(date1: CalendarDate, date2: CalendarDate): number {
+    return (date1.year - date2.year) * 12 + (date1.month - date2.month);
+}
+
+/**
  * Generate calendar data for a year (for heatmap visualization)
  */
 export function getCalendar(data: { [key: string]: number }, year: number) {
