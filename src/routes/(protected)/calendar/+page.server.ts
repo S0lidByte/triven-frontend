@@ -19,10 +19,10 @@ export const load = (async ({ fetch, locals, url }) => {
     const firstDay = dateUtils.getFirstDayOfMonth(year, month);
     const lastDay = dateUtils.getLastDayOfMonth(year, month);
 
-    const start_date = firstDay.toDate(dateUtils.getLocalTimeZone());
+    const start_date = new Date(firstDay.year, firstDay.month - 1, firstDay.day);
     start_date.setDate(start_date.getDate() - 7);
 
-    const end_date = lastDay.toDate(dateUtils.getLocalTimeZone());
+    const end_date = new Date(lastDay.year, lastDay.month - 1, lastDay.day);
     end_date.setDate(end_date.getDate() + 7);
 
     const startISO = start_date.toISOString();
