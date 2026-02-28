@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.0.0-beta.3](https://github.com/S0lidByte/triven-frontend/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2026-02-28)
+
+
+### Features
+
+* **calendar:** overhaul calendar ui bounds and render next up indicators ([0319428](https://github.com/S0lidByte/triven-frontend/commit/031942869784e5a083c912c0da372728651010b5))
+* **calendar:** scroll fix, clickable items, daily/weekly/monthly views, QoL improvements ([db5173b](https://github.com/S0lidByte/triven-frontend/commit/db5173b06d484d2430bd53782a6968fefa32a9f6))
+* **calendar:** skeleton loaders + null-tmdb tooltip feedback ([16a8ab1](https://github.com/S0lidByte/triven-frontend/commit/16a8ab196ab0de5af8ed7db189dfbaa52709e446))
+
+
+### Bug Fixes
+
+* **calendar:** remove unexported getLocalTimeZone usage to fix 500 error ([e7c48b0](https://github.com/S0lidByte/triven-frontend/commit/e7c48b07b0efb3bf840edc11e2c29adbc8eafcd4))
+* **library:** route standalone paused seasons and episodes to parent show ([231e92a](https://github.com/S0lidByte/triven-frontend/commit/231e92ac3245416ae89cf483ec87fbb041cde0b0))
+* rebuild docker image with auth registration fix ([0f318cc](https://github.com/S0lidByte/triven-frontend/commit/0f318cc4ae7e57b495f588a77a41557a60d38c4a))
+* **request-more:** call /retry instead of /items/add when item already exists in Riven ([1cb68bd](https://github.com/S0lidByte/triven-frontend/commit/1cb68bd534333dedf37365fa4fb2d93180b60117))
+* use data.riven?.id instead of rivenId to prevent TMDB ID fallback on request ([de1775c](https://github.com/S0lidByte/triven-frontend/commit/de1775cdfece8123b1c852148ba9201c4f798559))
+
+
+### Miscellaneous Chores
+
+* **main:** release 1.0.0-beta.0 ([7e85007](https://github.com/S0lidByte/triven-frontend/commit/7e85007efe81036081324760e353a3268e2fdba2))
+* **main:** release 1.0.0-beta.0 ([3c7e625](https://github.com/S0lidByte/triven-frontend/commit/3c7e625dee0b612791385f903ea1590b1c49d444))
+
 ## [1.0.0-beta.0](https://github.com/S0lidByte/triven-frontend/compare/v1.1.1-beta.3...v1.0.0-beta.0) (2026-02-27)
 
 
