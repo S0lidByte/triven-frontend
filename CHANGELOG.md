@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.1-beta.0](https://github.com/S0lidByte/triven-frontend/compare/v1.1.0-beta.0...v1.1.1-beta.0) (2026-02-28)
+
+
+### Miscellaneous Chores
+
+* **deps:** update frontend packages to fix security vulnerabilities ([a09fde0](https://github.com/S0lidByte/triven-frontend/commit/a09fde0a83e7511a0a1469d90263c6d1e37cb2d5))
+* **main:** release 1.1.0-beta.1 ([55cda5b](https://github.com/S0lidByte/triven-frontend/commit/55cda5b326689ded30acf9ee2e63fe0de3d6a8ec))
+* **main:** release 1.1.0-beta.1 ([1822e94](https://github.com/S0lidByte/triven-frontend/commit/1822e94ee4a9a505a1817915f4f2c66d1215a0f6))
+* **main:** release 1.1.0-beta.2 ([c763913](https://github.com/S0lidByte/triven-frontend/commit/c76391336e9a6c2e53165653c85ba9805b35e11e))
+* **main:** release 1.1.0-beta.2 ([48e70bd](https://github.com/S0lidByte/triven-frontend/commit/48e70bdde481122b079625e40b76088511854816))
+* sync prerelease-manifest to 1.1.0-beta.0 ([f40bec3](https://github.com/S0lidByte/triven-frontend/commit/f40bec37123c188c9eb538b85a4196fcca94485c))
+
+
+### Build System and Dependencies
+
+* trigger frontend dev docker build ([9a83817](https://github.com/S0lidByte/triven-frontend/commit/9a83817cdd4e16e3d74bc20dfbefe1ca35f8ba0a))
+
 ## [1.1.0-beta.2](https://github.com/S0lidByte/triven-frontend/compare/v1.1.0-beta.1...v1.1.0-beta.2) (2026-02-28)
 
 
