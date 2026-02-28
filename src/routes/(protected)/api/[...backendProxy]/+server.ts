@@ -2,22 +2,36 @@ import { error, json } from "@sveltejs/kit";
 import type { RequestHandler } from "@sveltejs/kit";
 
 const proxyRequest = async (method: string, locals: App.Locals, url: URL, request?: Request) => {
-    const backendUrl = new URL(url.pathname, locals.backendUrl);
+    // Tighten scope: only proxy to /api/ subpaths of the backend
+    const proxyPath = url.pathname.replace(/^\/api\//, "/api/");
+    const targetUrl = new URL(proxyPath, locals.backendUrl);
+    targetUrl.search = url.search;
 
     try {
-        const response = await fetch(`${backendUrl}${url.search}`, {
+        const response = await fetch(targetUrl.toString(), {
             method,
             headers: {
-                "Content-Type": "application/json",
-                "x-api-key": locals.apiKey
+                "x-api-key": locals.apiKey,
+                // Forward the content-type from the original request if it exists
+                "Content-Type": request?.headers.get("Content-Type") || "application/json"
             },
             body:
                 request && ["POST", "PUT", "PATCH", "DELETE"].includes(method)
                     ? await request.text()
                     : undefined
         });
-        return json(await response.json(), { status: response.status });
-    } catch {
+
+        const contentType = response.headers.get("Content-Type") || "";
+        const body = await response.text();
+
+        return new Response(body, {
+            status: response.status,
+            headers: {
+                "Content-Type": contentType
+            }
+        });
+    } catch (e: any) {
+        console.error(`[proxy] Error fetching ${targetUrl}:`, e);
         throw error(500, "Failed to fetch data from backend");
     }
 };

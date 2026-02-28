@@ -21,6 +21,10 @@ const getSchema = async (baseUrl: string, apiKey: string, fetch: typeof globalTh
 };
 
 export const load: PageServerLoad = async ({ fetch, locals }) => {
+    if (locals.user?.role !== "admin") {
+        error(403, "Forbidden");
+    }
+
     const allSettings = await providers.riven.GET("/api/v1/settings/get/all", {
         baseUrl: locals.backendUrl,
         headers: {
@@ -43,6 +47,10 @@ export const load: PageServerLoad = async ({ fetch, locals }) => {
 
 export const actions = {
     default: async ({ request, fetch, locals }) => {
+        if (locals.user?.role !== "admin") {
+            error(403, "Forbidden");
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleForm = createFormHandler<any, true>({
             ...defaults,

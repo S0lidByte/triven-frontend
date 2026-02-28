@@ -73,7 +73,12 @@ export const POST: RequestHandler = async ({ locals }) => {
                 }
             }
         } catch (e) {
-            if (!(e instanceof Error && e.name === "AbortError")) {
+            const err = e as any;
+            if (err?.name === "AbortError") {
+                // Expected abort, ignore
+            } else if (err?.cause?.code && ["ECONNREFUSED", "ENOTFOUND", "ETIMEDOUT"].includes(err.cause.code)) {
+                // Suppress stack trace spam for expected offline errors
+            } else {
                 logger.error("Notification proxy: Connection error:", e);
             }
         } finally {

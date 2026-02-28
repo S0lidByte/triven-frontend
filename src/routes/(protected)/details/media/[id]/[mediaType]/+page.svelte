@@ -1,6 +1,7 @@
 <script lang="ts">
     import { browser } from "$app/environment";
     import { page } from "$app/state";
+    import { replaceState } from "$app/navigation";
     import { type PageProps } from "./$types";
     import type { ParsedShowDetails } from "$lib/providers/parser";
     import { fade, fly } from "svelte/transition";
@@ -53,10 +54,20 @@
     let showTrailerOverride = $state(false);
     const showTrailer = $derived(showTrailerOverride && data.mediaDetails?.details?.trailer);
 
-    let showVideoPlayer = $state(false);
+    let showVideoPlayer = $state(page.url.searchParams.get("play") === "true");
     function toggleVideoPlayer() {
         showVideoPlayer = !showVideoPlayer;
     }
+
+    let playParamCleaned = false;
+    $effect(() => {
+        if (!playParamCleaned && showVideoPlayer && page.url.searchParams.has("play")) {
+            playParamCleaned = true;
+            const url = new URL(page.url);
+            url.searchParams.delete("play");
+            replaceState(url, $state.snapshot(page.state));
+        }
+    });
 
     function getInitialSeason() {
         if (data.mediaDetails?.type !== "tv") return "1";

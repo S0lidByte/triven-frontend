@@ -99,7 +99,12 @@ export const GET: RequestHandler = async ({ locals, url }) => {
                 }
             }
         } catch (e) {
-            if (!(e instanceof Error && e.name === "AbortError")) {
+            const err = e as any;
+            if (err?.name === "AbortError") {
+                // Expected abort, ignore
+            } else if (err?.cause?.code && ["ECONNREFUSED", "ENOTFOUND", "ETIMEDOUT"].includes(err.cause.code)) {
+                // Suppress stack trace spam for expected offline errors
+            } else {
                 logger.error("Scrape stream proxy: Connection error:", e);
             }
         } finally {
