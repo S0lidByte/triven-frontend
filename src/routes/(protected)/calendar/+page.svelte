@@ -354,8 +354,8 @@
             item.last_state === "Completed" && "line-through opacity-60"
         )}
         title={compact
-            ? `${item.show_title}${item.season ? ` S${item.season}E${item.episode}` : ""}`
-            : undefined}
+            ? `${item.show_title}${item.season ? ` S${item.season}E${item.episode}` : ""}${!itemUrl ? " (no metadata — not clickable)" : ""}`
+            : (!itemUrl ? "No metadata available — item is not clickable" : undefined)}
         onclick={(e) => {
             // Add preventative logic here if inner buttons are added later
         }}>
@@ -468,11 +468,36 @@
 <PageShell class="min-h-full w-full">
     <Card.Root class="mb-4 md:mb-6 relative">
         {#if isNavigating}
-            <!-- overflow-hidden scoped here to contain backdrop-blur; do not move to Card.Root -->
-            <div
-                class="absolute inset-0 z-50 overflow-hidden flex items-center justify-center bg-background/40 backdrop-blur-sm"
-            >
-                <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+            <!-- Skeleton loader: heights are tied to current grid layout assumptions.
+                 Update these values if the grid row structure changes. -->
+            <div class="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background/60 backdrop-blur-sm p-4">
+                {#if viewMode === "daily"}
+                    <div class="w-full max-w-2xl space-y-3">
+                        <!-- Skeleton height: h-32 for daily view -->
+                        {#each Array(3) as _}
+                            <div class="h-12 animate-pulse rounded-md bg-muted/60"></div>
+                        {/each}
+                    </div>
+                {:else if viewMode === "weekly"}
+                    <!-- Skeleton height: h-48 for weekly view -->
+                    <div class="grid w-full grid-cols-7 gap-1">
+                        {#each Array(7) as _}
+                            <div class="h-48 animate-pulse rounded-md bg-muted/60"></div>
+                        {/each}
+                    </div>
+                {:else}
+                    <!-- Skeleton height: h-96 for monthly view -->
+                    <div class="grid w-full grid-cols-7 gap-2">
+                        {#each Array(7) as _}
+                            <div class="h-4 animate-pulse rounded bg-muted/40"></div>
+                        {/each}
+                    </div>
+                    <div class="grid w-full grid-cols-7 gap-2">
+                        {#each Array(35) as _}
+                            <div class="h-24 animate-pulse rounded-md bg-muted/60"></div>
+                        {/each}
+                    </div>
+                {/if}
             </div>
         {/if}
         <Card.Header class="pb-4">
