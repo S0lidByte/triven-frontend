@@ -25,6 +25,7 @@
     interface EntertainmentItem {
         item_id: number;
         tvdb_id: string;
+        tmdb_id: string | number;
         show_title: string;
         item_type: string;
         aired_at: string;
@@ -54,10 +55,22 @@
     const todayDate = dateUtils.getToday();
     const cYearParam = $derived($page.url.searchParams.get("year"));
     const cMonthParam = $derived($page.url.searchParams.get("month"));
-    
+    const cDayParam = $derived($page.url.searchParams.get("day"));
+    const viewModeParam = $derived($page.url.searchParams.get("view"));
+
+    const viewMode = $derived.by(() => {
+        if (viewModeParam === "daily" || viewModeParam === "weekly") return viewModeParam;
+        return "monthly";
+    });
+
     let currentDate = $derived.by(() => {
         if (cYearParam && cMonthParam) {
-            return new CalendarDate(parseInt(cYearParam, 10), parseInt(cMonthParam, 10), 1);
+            const year = parseInt(cYearParam, 10);
+            const month = parseInt(cMonthParam, 10);
+            const day = cDayParam ? parseInt(cDayParam, 10) : null;
+            if (day) return new CalendarDate(year, month, day);
+            if (todayDate.year === year && todayDate.month === month) return todayDate;
+            return new CalendarDate(year, month, 1);
         }
         return todayDate;
     });
@@ -88,6 +101,15 @@
             return null;
         }
         return aired;
+    }
+
+    function getItemUrl(item: EntertainmentItem): string | null {
+        if (!item.tmdb_id) return null;
+        const type = item.item_type === "movie" ? "movie" : "tv";
+        if (import.meta.env.DEV && !["movie", "show", "season", "episode"].includes(item.item_type)) {
+            console.warn(`Calendar: unknown item_type "${item.item_type}" for "${item.show_title}"`);
+        }
+        return `/details/media/${item.tmdb_id}/${type}`;
     }
 
     const itemsByDate = $derived.by(() => {
@@ -182,30 +204,103 @@
         return allItems.sort((a, b) => a.date.compare(b.date)).slice(0, 15);
     });
 
-    function navigateMonth(direction: "prev" | "next") {
+    const weeklyDays = $derived.by(() => {
+        const dow = dateUtils.getDayOfWeek(currentDate);
+        const weekStart = dateUtils.addDays(currentDate, -dow);
+        const days: CalendarDay[] = [];
+        for (let i = 0; i < 7; i++) {
+            const d = dateUtils.addDays(weekStart, i);
+            const dateKey = dateUtils.toISODate(d);
+            days.push({ date: d, dateKey, isCurrentMonth: d.month === currentDate.month, items: filteredItemsByDate[dateKey] || [], day: d.day, dayOfWeek: i });
+        }
+        return days;
+    });
+
+    const dailyItems = $derived.by(() => filteredItemsByDate[dateUtils.toISODate(currentDate)] || []);
+
+    const monthStats = $derived.by(() => {
+        let total = 0, movies = 0, episodes = 0, shows = 0, seasons = 0;
+        for (const day of calendarDays) {
+            if (!day.isCurrentMonth) continue;
+            for (const item of day.items) {
+                total++;
+                if (item.item_type === "movie") movies++;
+                else if (item.item_type === "episode") episodes++;
+                else if (item.item_type === "show") shows++;
+                else if (item.item_type === "season") seasons++;
+            }
+        }
+        return { total, movies, episodes, shows, seasons };
+    });
+
+    function buildUrl(params: Record<string, string | null>) {
+        const sp = new URLSearchParams();
+        for (const [k, v] of Object.entries(params)) {
+            if (v !== null && v !== undefined) sp.set(k, v);
+        }
+        return "?" + sp.toString();
+    }
+
+    function navigate(direction: "prev" | "next") {
         if (isNavigating) return;
         isNavigating = true;
-        
-        let newMonth;
-        let newYear;
-        
-        if (direction === "prev") {
-            newMonth = currentDate.month === 1 ? 12 : currentDate.month - 1;
-            newYear = currentDate.month === 1 ? currentDate.year - 1 : currentDate.year;
+        let target: CalendarDate;
+        if (viewMode === "daily") {
+            target = dateUtils.addDays(currentDate, direction === "prev" ? -1 : 1);
+        } else if (viewMode === "weekly") {
+            target = dateUtils.addDays(currentDate, direction === "prev" ? -7 : 7);
         } else {
-            newMonth = currentDate.month === 12 ? 1 : currentDate.month + 1;
-            newYear = currentDate.month === 12 ? currentDate.year + 1 : currentDate.year;
+            const newMonth = direction === "prev" ? (currentDate.month === 1 ? 12 : currentDate.month - 1) : (currentDate.month === 12 ? 1 : currentDate.month + 1);
+            const newYear = direction === "prev" ? (currentDate.month === 1 ? currentDate.year - 1 : currentDate.year) : (currentDate.month === 12 ? currentDate.year + 1 : currentDate.year);
+            target = new CalendarDate(newYear, newMonth, 1);
         }
-        
-        goto(`?year=${newYear}&month=${newMonth}`, { keepFocus: true }).catch(() => {}).finally(() => {
-            isNavigating = false;
+        const weekSunday = viewMode === "weekly" ? dateUtils.addDays(target, -dateUtils.getDayOfWeek(target)) : target;
+        const url = buildUrl({
+            view: viewMode === "monthly" ? null : viewMode,
+            year: String(weekSunday.year),
+            month: String(weekSunday.month),
+            day: viewMode === "daily" ? String(target.day) : null
         });
+        goto(url, { keepFocus: true }).catch(() => {}).finally(() => { isNavigating = false; });
+    }
+
+    function switchView(mode: string) {
+        if (isNavigating) return;
+        isNavigating = true;
+        const url = buildUrl({
+            view: mode === "monthly" ? null : mode,
+            year: String(currentDate.year),
+            month: String(currentDate.month),
+            day: mode === "daily" ? String(currentDate.day) : null
+        });
+        goto(url).catch(() => {}).finally(() => { isNavigating = false; });
+    }
+
+    function goToday() {
+        if (isNavigating) return;
+        const url = buildUrl({ view: viewMode === "monthly" ? null : viewMode });
+        goto(url).catch(() => {});
     }
 
     function formatDayTitle(date: CalendarDate) {
         return `${dayNames[dateUtils.getDayOfWeek(date)]}, ${monthNames[date.month - 1]} ${date.day}`;
     }
+
+    function handleKeydown(e: KeyboardEvent) {
+        if (isNavigating || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+        if (e.key === "ArrowLeft") navigate("prev");
+        else if (e.key === "ArrowRight") navigate("next");
+    }
+
+    let touchStartX = $state(0);
+    function onTouchStart(e: TouchEvent) { touchStartX = e.touches[0].clientX; }
+    function onTouchEnd(e: TouchEvent) {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(dx) > 50) navigate(dx < 0 ? "next" : "prev");
+    }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <svelte:head>
     <title>Calendar - Riven</title>
@@ -229,8 +324,12 @@
     {@const isPastUncompleted = diffDays !== null && diffDays < 0 && item.last_state !== "Completed"}
     {@const isSeriesPremiere = item.item_type === "episode" && item.episode === 1 && item.season === 1}
     {@const isSeasonPremiere = item.item_type === "episode" && item.episode === 1 && item.season && item.season > 1}
-    <div
+    {@const itemUrl = getItemUrl(item)}
+    <svelte:element
+        this={itemUrl ? "a" : "div"}
+        href={itemUrl}
         class={cn(
+            itemUrl && "block cursor-pointer no-underline text-foreground hover:text-foreground",
             "flex items-center rounded transition-colors relative",
             compact ? "gap-1 truncate p-1" : "gap-3 p-2",
             item.item_type === "episode"
@@ -256,7 +355,10 @@
         )}
         title={compact
             ? `${item.show_title}${item.season ? ` S${item.season}E${item.episode}` : ""}`
-            : undefined}>
+            : undefined}
+        onclick={(e) => {
+            // Add preventative logic here if inner buttons are added later
+        }}>
         
         {#if isPastUncompleted}
             <TriangleAlert class="absolute right-1 top-1 h-3 w-3 text-red-500 opacity-80" />
@@ -286,7 +388,7 @@
                 </div>
             {/if}
         </div>
-    </div>
+    </svelte:element>
 {/snippet}
 
 {#snippet dayItemsList(day: CalendarDay, limit = Infinity, showMore = false)}
@@ -363,29 +465,57 @@
     </div>
 {/snippet}
 
-<PageShell class="h-full w-full">
-    <Card.Root class="mb-4 md:mb-6 relative overflow-hidden">
+<PageShell class="min-h-full w-full">
+    <Card.Root class="mb-4 md:mb-6 relative">
         {#if isNavigating}
+            <!-- overflow-hidden scoped here to contain backdrop-blur; do not move to Card.Root -->
             <div
-                class="absolute inset-0 z-50 flex items-center justify-center bg-background/40 backdrop-blur-sm"
+                class="absolute inset-0 z-50 overflow-hidden flex items-center justify-center bg-background/40 backdrop-blur-sm"
             >
                 <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
             </div>
         {/if}
         <Card.Header class="pb-4">
-            <div class="flex items-center justify-between">
-                <Button variant="outline" size="sm" onclick={() => navigateMonth("prev")}>
-                    <ChevronLeft class="h-4 w-4" />
-                </Button>
+            <div class="flex flex-col gap-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-1">
+                        <Button variant="outline" size="sm" onclick={() => navigate("prev")} disabled={isNavigating}>
+                            <ChevronLeft class="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onclick={goToday} disabled={isNavigating} class="px-3 text-xs">Today</Button>
+                        <Button variant="outline" size="sm" onclick={() => navigate("next")} disabled={isNavigating}>
+                            <ChevronRight class="h-4 w-4" />
+                        </Button>
+                    </div>
 
-                <Card.Title class="text-xl font-bold md:text-2xl">
-                    {monthNames[currentDate.month - 1]}
-                    {currentDate.year}
-                </Card.Title>
+                    <Card.Title class="text-xl font-bold md:text-2xl">
+                        {#if viewMode === "daily"}
+                            {formatDayTitle(currentDate)}
+                        {:else if viewMode === "weekly"}
+                            {monthNames[weeklyDays[0].date.month - 1]} {weeklyDays[0].date.day} – {monthNames[weeklyDays[6].date.month - 1]} {weeklyDays[6].date.day}, {weeklyDays[6].date.year}
+                        {:else}
+                            {monthNames[currentDate.month - 1]} {currentDate.year}
+                        {/if}
+                    </Card.Title>
 
-                <Button variant="outline" size="sm" onclick={() => navigateMonth("next")}>
-                    <ChevronRight class="h-4 w-4" />
-                </Button>
+                    <div class="flex gap-0.5 rounded-md border p-0.5">
+                        {#each [['daily','Day'],['weekly','Week'],['monthly','Month']] as [mode, label]}
+                            <Button variant={viewMode === mode ? 'default' : 'ghost'} size="sm" disabled={isNavigating} onclick={() => switchView(mode)} class="px-3 text-xs">
+                                {label}
+                            </Button>
+                        {/each}
+                    </div>
+                </div>
+
+                {#if viewMode === "monthly" && monthStats.total > 0}
+                    <p class="text-muted-foreground text-center text-xs">
+                        {monthStats.total} item{monthStats.total !== 1 ? 's' : ''} this month
+                        {#if monthStats.movies > 0}&nbsp;&middot;&nbsp;<span class="text-orange-400">{monthStats.movies} movie{monthStats.movies !== 1 ? 's' : ''}</span>{/if}
+                        {#if monthStats.episodes > 0}&nbsp;&middot;&nbsp;<span class="text-blue-400">{monthStats.episodes} episode{monthStats.episodes !== 1 ? 's' : ''}</span>{/if}
+                        {#if monthStats.shows > 0}&nbsp;&middot;&nbsp;<span class="text-purple-400">{monthStats.shows} show{monthStats.shows !== 1 ? 's' : ''}</span>{/if}
+                        {#if monthStats.seasons > 0}&nbsp;&middot;&nbsp;<span class="text-green-400">{monthStats.seasons} season{monthStats.seasons !== 1 ? 's' : ''}</span>{/if}
+                    </p>
+                {/if}
             </div>
             <div
                 class="mt-4 flex flex-wrap items-center justify-center gap-4 border-t pt-4 md:gap-6">
@@ -457,26 +587,62 @@
             </div>
         {/if}
 
-        <Card.Content class="p-2 lg:p-4">
-            {#if isMobile.current}
-                <div class="space-y-2">
-                    {#each calendarDays.filter((day) => day.isCurrentMonth && day.items.length > 0) as day (day.dateKey)}
-                        {@render mobileDayCard(day)}
-                    {/each}
+        <Card.Content class="p-2 lg:p-4" ontouchstart={onTouchStart} ontouchend={onTouchEnd}>
+
+            {#if viewMode === "daily"}
+                <div class="mx-auto max-w-2xl">
+                    {#if dailyItems.length === 0}
+                        <p class="text-muted-foreground py-16 text-center text-sm">No items scheduled for this day.</p>
+                    {:else}
+                        <div class="space-y-2 py-2">
+                            {#each dailyItems as item (item.item_id)}
+                                {@render entertainmentItem(item, false)}
+                            {/each}
+                        </div>
+                    {/if}
                 </div>
-            {:else}
-                <div class="mb-4 grid grid-cols-7 gap-2">
-                    {#each dayNames as day}
-                        <div class="text-muted-foreground py-2 text-center text-base font-semibold">
-                            {day}
+
+            {:else if viewMode === "weekly"}
+                {@const hasAnyItem = weeklyDays.some(d => d.items.length > 0)}
+                <div class="mb-2 grid grid-cols-7 gap-1">
+                    {#each weeklyDays as day}
+                        <div class="text-muted-foreground py-1 text-center text-xs font-semibold">
+                            {dayNames[day.dayOfWeek]}<br />
+                            <span class={cn("text-xs", day.dateKey === dateUtils.toISODate(todayDate) && "text-primary font-bold")}>
+                                {day.date.month}/{day.date.day}
+                            </span>
                         </div>
                     {/each}
                 </div>
-                <div class="grid grid-cols-7 gap-2">
-                    {#each calendarDays as day (day.dateKey)}
-                        {@render calendarDayCard(day)}
-                    {/each}
-                </div>
+                {#if !hasAnyItem}
+                    <p class="text-muted-foreground col-span-7 py-16 text-center text-sm">No items scheduled this week.</p>
+                {:else}
+                    <div class="grid grid-cols-7 gap-1">
+                        {#each weeklyDays as day (day.dateKey)}
+                            {@render calendarDayCard(day)}
+                        {/each}
+                    </div>
+                {/if}
+
+            {:else}
+                {#if isMobile.current}
+                    <div class="space-y-2">
+                        {#each calendarDays.filter((day) => day.isCurrentMonth && day.items.length > 0) as day (day.dateKey)}
+                            {@render mobileDayCard(day)}
+                        {/each}
+                    </div>
+                {:else}
+                    <div class="mb-4 grid grid-cols-7 gap-2">
+                        {#each dayNames as day}
+                            <div class="text-muted-foreground py-2 text-center text-base font-semibold">{day}</div>
+                        {/each}
+                    </div>
+                    <div class="grid grid-cols-7 gap-2">
+                        {#each calendarDays as day (day.dateKey)}
+                            {@render calendarDayCard(day)}
+                        {/each}
+                    </div>
+                {/if}
             {/if}
         </Card.Content>
     </Card.Root>
