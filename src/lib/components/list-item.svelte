@@ -43,6 +43,24 @@
             // If indexer is undefined, assume tmdb behavior for now as default
             return `/details/media/${data.id}/${normalizedType}${queryParam}`;
         }
+
+        if (["season", "episode"].includes(normalizedType || "")) {
+            // Find parent ID for routing to the Show page, as standalone season/episode pages don't exist
+            let parentId = data.parent_ids?.tmdb_id;
+            let parentQueryParam = "";
+
+            if (!parentId && data.parent_ids?.tvdb_id) {
+                parentId = data.parent_ids.tvdb_id;
+                parentQueryParam = "?indexer=tvdb";
+            }
+
+            if (parentId) {
+                return `/details/media/${parentId}/tv${parentQueryParam}`;
+            } else {
+                return "#"; // Fallback to prevent malformed routes if no parent ID exists
+            }
+        }
+
         return `/details/${indexer}${normalizedType ? `/${normalizedType}` : ""}/${data.id}`;
     });
 
