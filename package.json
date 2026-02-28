@@ -27,7 +27,7 @@
         "@fontsource/oxanium": "^5.2.8",
         "@lucide/svelte": "^0.562.0",
         "@sveltejs/adapter-node": "^5.5.1",
-        "@sveltejs/kit": "^2.49.5",
+        "@sveltejs/kit": "^2.53.4",
         "@sveltejs/vite-plugin-svelte": "^6.2.4",
         "@tailwindcss/forms": "^0.5.11",
         "@tailwindcss/typography": "^0.5.19",
@@ -57,7 +57,7 @@
         "prettier-plugin-svelte": "^3.4.1",
         "prettier-plugin-tailwindcss": "^0.7.2",
         "runed": "^0.37.1",
-        "svelte": "^5.46.4",
+        "svelte": "^5.53.6",
         "svelte-check": "^4.3.5",
         "svelte-confetti": "^2.3.2",
         "svelte-sonner": "^1.0.7",
@@ -108,7 +108,16 @@
         ],
         "overrides": {
             "cookie": "^0.7.0",
-            "@lucide/svelte": "^0.562.0"
+            "@lucide/svelte": "^0.562.0",
+            "minimatch@<3.1.4": "^3.1.4",
+            "minimatch@>=5.0.0 <5.1.8": "^5.1.8",
+            "minimatch@>=9.0.0 <9.0.7": "^9.0.7",
+            "rollup@<4.59.0": "^4.59.0",
+            "esbuild@<=0.24.2": "^0.25.0",
+            "lodash-es@<=4.17.22": "^4.17.23",
+            "ajv@<6.14.0": "^6.14.0",
+            "ajv@>=7.0.0 <8.18.0": "^8.18.0",
+            "devalue@<=5.6.2": "^5.6.3"
         }
     }
 }
