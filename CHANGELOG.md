@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0-beta.1](https://github.com/S0lidByte/triven-frontend/compare/v1.1.0-beta.0...v1.1.0-beta.1) (2026-02-28)
+
+
+### Miscellaneous Chores
+
+* sync prerelease-manifest to 1.1.0-beta.0 ([f40bec3](https://github.com/S0lidByte/triven-frontend/commit/f40bec37123c188c9eb538b85a4196fcca94485c))
+
 ## [1.1.0-beta.0](https://github.com/S0lidByte/triven-frontend/compare/v1.0.0-beta.0...v1.1.0-beta.0) (2026-02-28)
 
 
