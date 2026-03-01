@@ -55,6 +55,8 @@ async function getSettingsForPaths(
 }
 
 const SETTINGS_FETCH_TIMEOUT_MS = 20_000;
+const SETTINGS_FETCH_RETRY_TIMEOUT_MS = 60_000;
+const SETTINGS_FETCH_MAX_ATTEMPTS = 2;
 
 function createFetchWithTimeout(timeoutMs: number = SETTINGS_FETCH_TIMEOUT_MS): typeof fetch {
     return (input: RequestInfo | URL, init?: RequestInit) => {
@@ -62,6 +64,41 @@ function createFetchWithTimeout(timeoutMs: number = SETTINGS_FETCH_TIMEOUT_MS): 
         const id = setTimeout(() => controller.abort(), timeoutMs);
         return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(id));
     };
+}
+
+function isTimeoutError(e: unknown): boolean {
+    const message = e instanceof Error ? e.message : String(e);
+    const normalized = message.toLowerCase();
+    return normalized.includes("abort") || normalized.includes("timeout") || normalized.includes("timed out");
+}
+
+async function loadSettingsDataWithRetry(
+    backendUrl: string,
+    apiKey: string,
+    keys: string,
+    paths: string
+): Promise<[Record<string, unknown>, Record<string, unknown>]> {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= SETTINGS_FETCH_MAX_ATTEMPTS; attempt++) {
+        const timeoutMs =
+            attempt === 1 ? SETTINGS_FETCH_TIMEOUT_MS : SETTINGS_FETCH_RETRY_TIMEOUT_MS;
+        const fetchWithTimeout = createFetchWithTimeout(timeoutMs);
+
+        try {
+            return (await Promise.all([
+                getSchemaForKeys(backendUrl, apiKey, keys, fetchWithTimeout),
+                getSettingsForPaths(backendUrl, apiKey, paths, fetchWithTimeout)
+            ])) as [Record<string, unknown>, Record<string, unknown>];
+        } catch (e) {
+            lastError = e;
+            if (!isTimeoutError(e) || attempt === SETTINGS_FETCH_MAX_ATTEMPTS) {
+                break;
+            }
+        }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 export const load: PageServerLoad = async ({
@@ -82,20 +119,22 @@ export const load: PageServerLoad = async ({
     const paths = getPathsForTab(tab);
     const keys = paths;
 
-    const fetchWithTimeout = createFetchWithTimeout();
-
     let schema: Record<string, unknown>;
     let initialValue: Record<string, unknown>;
 
     try {
-        [schema, initialValue] = (await Promise.all([
-            getSchemaForKeys(locals.backendUrl, locals.apiKey, keys, fetchWithTimeout),
-            getSettingsForPaths(locals.backendUrl, locals.apiKey, paths, fetchWithTimeout)
-        ])) as [Record<string, unknown>, Record<string, unknown>];
+        [schema, initialValue] = await loadSettingsDataWithRetry(
+            locals.backendUrl,
+            locals.apiKey,
+            keys,
+            paths
+        );
     } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        if (msg.includes("abort")) {
-            error(504, "Settings request timed out. Is the backend running and reachable?");
+        if (isTimeoutError(e)) {
+            error(
+                504,
+                "Settings request timed out after retry. Backend may be slow or temporarily unreachable."
+            );
         }
         throw e;
     }
