@@ -45,6 +45,9 @@ jobs:
             releases_created: ${{ steps.release.outputs.releases_created }}
             tag_name: ${{ steps.release.outputs.tag_name }}
         steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
             - id: release
               name: Run prerelease release-please
               uses: googleapis/release-please-action@v4.4.0
@@ -71,6 +74,9 @@ jobs:
         if: ${{ needs.prerelease-prep.outputs.releases_created == 'true' && contains(needs.prerelease-prep.outputs.tag_name, 'beta') }}
         needs: [prerelease-prep]
         steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
             - name: Pre Release Step
               run: |
                   echo "Running pre-release step!"
@@ -99,6 +105,9 @@ jobs:
         if: ${{ needs.prerelease-prep.outputs.releases_created == 'true' && !contains(needs.prerelease-prep.outputs.tag_name, 'beta') }}
         needs: [prerelease-prep]
         steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
             - name: Release Step
               run: |
                   echo "Running release step!"
