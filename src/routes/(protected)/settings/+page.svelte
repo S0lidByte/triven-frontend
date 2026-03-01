@@ -11,6 +11,7 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Tooltip from "$lib/components/ui/tooltip/index.js";
     import { Separator } from "$lib/components/ui/separator/index.js";
+    /** Help icon for settings card tooltip; use @lucide/svelte (not lucide-svelte). */
     import HelpCircle from "@lucide/svelte/icons/help-circle";
     import { cn } from "$lib/utils";
     setShadcnContext();
