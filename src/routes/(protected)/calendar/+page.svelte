@@ -109,7 +109,22 @@
         if (import.meta.env.DEV && !["movie", "show", "season", "episode"].includes(item.item_type)) {
             console.warn(`Calendar: unknown item_type "${item.item_type}" for "${item.show_title}"`);
         }
-        return `/details/media/${item.tmdb_id}/${type}`;
+
+        const baseUrl = `/details/media/${item.tmdb_id}/${type}`;
+        if (type === "movie") return baseUrl;
+
+        const hasSeason = item.season !== undefined && item.season !== null;
+        const hasEpisode = item.episode !== undefined && item.episode !== null;
+
+        if (item.item_type === "episode" && hasSeason && hasEpisode) {
+            return `${baseUrl}?season=${item.season}&episode=${item.episode}`;
+        }
+
+        if ((item.item_type === "season" || item.item_type === "episode") && hasSeason) {
+            return `${baseUrl}?season=${item.season}`;
+        }
+
+        return baseUrl;
     }
 
     const itemsByDate = $derived.by(() => {

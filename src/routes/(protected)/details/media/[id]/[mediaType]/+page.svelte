@@ -6,6 +6,7 @@
     import type { ParsedShowDetails } from "$lib/providers/parser";
     import { fade, fly } from "svelte/transition";
     import { cubicOut } from "svelte/easing";
+    import { tick } from "svelte";
     import * as Carousel from "$lib/components/ui/carousel/index.js";
     import { Badge } from "$lib/components/ui/badge/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
@@ -69,10 +70,51 @@
         }
     });
 
+    const EPISODE_HIGHLIGHT_DURATION_MS = 3500;
+
+    function parsePositiveIntParam(value: string | null): number | undefined {
+        if (!value) return undefined;
+        const parsed = Number.parseInt(value, 10);
+        if (Number.isNaN(parsed) || parsed <= 0) return undefined;
+        return parsed;
+    }
+
+    function getEpisodeCardDomId(
+        seasonNumber: number | null | undefined,
+        episodeNumber: number | null | undefined
+    ): string | null {
+        if (seasonNumber === null || seasonNumber === undefined) return null;
+        if (episodeNumber === null || episodeNumber === undefined) return null;
+        return `episode-card-s${seasonNumber}-e${episodeNumber}`;
+    }
+
+    function getEpisodeDeepLinkKey(
+        seasonNumber: number | null | undefined,
+        episodeNumber: number | null | undefined
+    ): string | null {
+        if (seasonNumber === null || seasonNumber === undefined) return null;
+        if (episodeNumber === null || episodeNumber === undefined) return null;
+        return `${seasonNumber}-${episodeNumber}`;
+    }
+
+    const deepLinkSeason = $derived.by(() => parsePositiveIntParam(page.url.searchParams.get("season")));
+    const deepLinkEpisode = $derived.by(() => parsePositiveIntParam(page.url.searchParams.get("episode")));
+
+    let highlightedEpisodeKey = $state<string | null>(null);
+    let highlightResetTimeout: ReturnType<typeof setTimeout> | undefined;
+    let handledEpisodeDeepLinkKey = $state<string | null>(null);
+
     function getInitialSeason() {
         if (data.mediaDetails?.type !== "tv") return "1";
         const details = data.mediaDetails?.details as ParsedShowDetails;
         if (!details?.seasons?.length) return "1";
+
+        if (deepLinkSeason) {
+            const hasRequestedSeason = details.seasons.some((s) => s.number === deepLinkSeason);
+            if (hasRequestedSeason) {
+                return deepLinkSeason.toString();
+            }
+        }
 
         const hasSeason1 = details.seasons.some((s) => s.number === 1);
         return hasSeason1 ? "1" : (details.seasons[0].number?.toString() ?? "1");
@@ -83,6 +125,59 @@
     $effect(() => {
         // Track ID changes to reset selected season
         selectedSeason = getInitialSeason();
+    });
+
+    $effect(() => {
+        if (!browser || data.mediaDetails?.type !== "tv") return;
+
+        const season = deepLinkSeason;
+        const episode = deepLinkEpisode;
+        if (!season || !episode) return;
+
+        const deepLinkKey = getEpisodeDeepLinkKey(season, episode);
+        if (!deepLinkKey || handledEpisodeDeepLinkKey === deepLinkKey) return;
+
+        const selectedSeasonNumber = parsePositiveIntParam(selectedSeason ?? null);
+        if (selectedSeasonNumber !== season) return;
+
+        const details = data.mediaDetails.details as ParsedShowDetails;
+        const episodeExists = details.episodes?.some(
+            (ep) => ep.seasonNumber === season && ep.number === episode
+        );
+        if (!episodeExists) return;
+
+        const domId = getEpisodeCardDomId(season, episode);
+        if (!domId) return;
+
+        tick()
+            .then(() => {
+                const el = document.getElementById(domId);
+                if (!el) return;
+
+                el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+                highlightedEpisodeKey = deepLinkKey;
+                handledEpisodeDeepLinkKey = deepLinkKey;
+
+                if (highlightResetTimeout) {
+                    clearTimeout(highlightResetTimeout);
+                }
+                highlightResetTimeout = setTimeout(() => {
+                    if (highlightedEpisodeKey === deepLinkKey) {
+                        highlightedEpisodeKey = null;
+                    }
+                }, EPISODE_HIGHLIGHT_DURATION_MS);
+            })
+            .catch(() => {
+                // No-op: deep-linking is best-effort and should not break rendering
+            });
+    });
+
+    $effect(() => {
+        return () => {
+            if (highlightResetTimeout) {
+                clearTimeout(highlightResetTimeout);
+            }
+        };
     });
 
     let rivenId = $derived(data.riven?.id ?? data.mediaDetails?.details?.id);
@@ -814,12 +909,23 @@
                                 {@const rivenEpisode = rivenSeason?.episodes?.find(
                                     (e) => e.episode_number === episode.number
                                 )}
+                                {@const episodeDeepLinkKey = getEpisodeDeepLinkKey(episode.seasonNumber, episode.number)}
+                                {@const isEpisodeDeepLinked = episodeDeepLinkKey !== null && highlightedEpisodeKey === episodeDeepLinkKey}
+                                {@const episodeDomId = getEpisodeCardDomId(episode.seasonNumber, episode.number)}
 
                                 {#if isMobile.current}
                                     <Drawer.Root direction="bottom">
-                                        <Drawer.Trigger class="group w-full text-left">
-                                            {@render episodeTrigger(episode, rivenEpisode)}
-                                        </Drawer.Trigger>
+                                        <div
+                                            id={episodeDomId ?? undefined}
+                                            class={cn(
+                                                "rounded-xl transition-all duration-500",
+                                                isEpisodeDeepLinked &&
+                                                    "ring-primary ring-offset-background shadow-primary/20 ring-2 ring-offset-2 shadow-lg"
+                                            )}>
+                                            <Drawer.Trigger class="group w-full text-left">
+                                                {@render episodeTrigger(episode, rivenEpisode)}
+                                            </Drawer.Trigger>
+                                        </div>
                                         <Drawer.Content class="max-h-[85vh] outline-none">
                                             <div class="mx-auto w-full max-w-4xl px-4 pb-6 md:px-6">
                                                 <Drawer.Header class="px-0 pt-2 pb-0 text-left">
@@ -835,9 +941,17 @@
                                     </Drawer.Root>
                                 {:else}
                                     <Sheet.Root>
-                                        <Sheet.Trigger class="group w-full text-left">
-                                            {@render episodeTrigger(episode, rivenEpisode)}
-                                        </Sheet.Trigger>
+                                        <div
+                                            id={episodeDomId ?? undefined}
+                                            class={cn(
+                                                "rounded-xl transition-all duration-500",
+                                                isEpisodeDeepLinked &&
+                                                    "ring-primary ring-offset-background shadow-primary/20 ring-2 ring-offset-2 shadow-lg"
+                                            )}>
+                                            <Sheet.Trigger class="group w-full text-left">
+                                                {@render episodeTrigger(episode, rivenEpisode)}
+                                            </Sheet.Trigger>
+                                        </div>
                                         <Sheet.Content
                                             side="right"
                                             class="flex w-full flex-col overflow-hidden border-l border-white/10 bg-zinc-950/95 backdrop-blur-2xl sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
