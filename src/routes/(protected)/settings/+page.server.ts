@@ -20,7 +20,7 @@ const getSchema = async (baseUrl: string, apiKey: string, fetch: typeof globalTh
     return settingsSchema.data;
 };
 
-export const load: PageServerLoad = async ({ fetch, locals }) => {
+export const load: PageServerLoad = async ({ fetch, locals }: { fetch: typeof globalThis.fetch; locals: App.Locals }) => {
     if (locals.user?.role !== "admin") {
         error(403, "Forbidden");
     }
@@ -46,7 +46,7 @@ export const load: PageServerLoad = async ({ fetch, locals }) => {
 };
 
 export const actions = {
-    default: async ({ request, fetch, locals }) => {
+    default: async ({ request, fetch, locals }: { request: Request; fetch: typeof globalThis.fetch; locals: App.Locals }) => {
         if (locals.user?.role !== "admin") {
             error(403, "Forbidden");
         }
