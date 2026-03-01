@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.2.0-beta.0](https://github.com/S0lidByte/triven-frontend/compare/v1.1.1-beta.0...v1.2.0-beta.0) (2026-03-01)
+
+
+### Features
+
+* fix 404s, suppress sse errors, and apply security remediations ([4083aba](https://github.com/S0lidByte/triven-frontend/commit/4083aba93376a02d590e65e4f245867e1cedeaba))
+* **settings:** improve UX with cognitive layout, tooltips, and schema ordering ([a4191fd](https://github.com/S0lidByte/triven-frontend/commit/a4191fdc77245c36a019414c4aed36dc3f8b20fc))
+
+
+### Bug Fixes
+
+* settings Tooltip.Provider for SSR; dashboard/downloader timeout and fallback ([d53754f](https://github.com/S0lidByte/triven-frontend/commit/d53754f0cc69696bdb77d5289e19c21d6dfe5ca2))
+* **settings:** ensure @lucide/svelte import and bust build cache ([8a99967](https://github.com/S0lidByte/triven-frontend/commit/8a999678d1fc9605c5cd548f17b73483375e6c95))
+* **settings:** use @lucide/svelte and remove redundant role for build ([5d85428](https://github.com/S0lidByte/triven-frontend/commit/5d854280302222a70c75fdedb182f9b2a4abf4b0))
+
+
+### Miscellaneous Chores
+
+* **main:** release 1.1.0-beta.3 ([#28](https://github.com/S0lidByte/triven-frontend/issues/28)) ([1afbb80](https://github.com/S0lidByte/triven-frontend/commit/1afbb80e7e694471de81845d4c2aaae49d07658c))
+* Node 20, deps update, fix 15 check errors and runes warnings ([6b746c1](https://github.com/S0lidByte/triven-frontend/commit/6b746c1a24f45436ef66f1c30deb1adb5a12dbef))
+* **types:** fix frontend type errors and alignment ([fb37c28](https://github.com/S0lidByte/triven-frontend/commit/fb37c280296a6f4d3b1503ef68cf53f12b7490dd))
+
 ## [1.1.0-beta.3](https://github.com/S0lidByte/triven-frontend/compare/v1.1.0-beta.2...v1.1.0-beta.3) (2026-03-01)
 
 
