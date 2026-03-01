@@ -51,6 +51,22 @@
     // State for season selection - managed by SeasonSelector component
     let selectedSeasons = $state<SvelteSet<number>>(new SvelteSet());
 
+    const sortedSelectedSeasonNumbers = $derived.by(() =>
+        Array.from(selectedSeasons)
+            .filter((n) => Number.isInteger(n))
+            .sort((a, b) => a - b)
+    );
+
+    const requestableSeasons = $derived.by(() =>
+        seasons
+            .filter((s) => s.status !== "Available")
+            .map((s) => s.season_number)
+            .filter((n) => Number.isInteger(n))
+            .sort((a, b) => a - b)
+    );
+
+    const hasRequestableSeasons = $derived(requestableSeasons.length > 0);
+
     async function addMediaItem(ids: (string | null | undefined)[], mediaType: string) {
         const validIds = ids.filter((id): id is string => id !== null && id !== undefined);
 
@@ -58,14 +74,13 @@
             if (
                 mediaType === "tv" &&
                 seasons.length > 0 &&
-                selectedSeasons.size > 0 &&
-                selectedSeasons.size < seasons.length &&
+                sortedSelectedSeasonNumbers.length > 0 &&
                 externalId
             ) {
                 const body: ScrapeSeasonRequest = {
                     media_type: "tv",
                     tvdb_id: externalId,
-                    season_numbers: Array.from(selectedSeasons)
+                    season_numbers: sortedSelectedSeasonNumbers
                 };
 
                 // Use consolidated /auto endpoint with season_numbers
@@ -157,7 +172,10 @@
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
             <AlertDialog.Action
                 disabled={loading ||
-                    (mediaType === "tv" && seasons.length > 0 && selectedSeasons.size === 0)}
+                    (mediaType === "tv" &&
+                        seasons.length > 0 &&
+                        hasRequestableSeasons &&
+                        sortedSelectedSeasonNumbers.length === 0)}
                 onclick={async () => {
                     loading = true;
                     await addMediaItem(ids, mediaType);
