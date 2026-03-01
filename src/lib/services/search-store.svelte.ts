@@ -2,6 +2,7 @@ import { browser } from "$app/environment";
 import type { ParsedSearchQuery } from "$lib/search-parser";
 
 import { createScopedLogger } from "$lib/logger";
+import { endPerfMark, perfCount, startPerfMark } from "$lib/perf";
 import type { TMDBTransformedListItem } from "$lib/providers/parser";
 
 const logger = createScopedLogger("search");
@@ -76,23 +77,47 @@ export class SearchStore {
     // For request cancellation
     abortController: AbortController | null = null;
 
-    // Results are exactly what the API returns.
+    #mergedSortedResults = $state<TMDBTransformedListItem[]>([]);
+    #mergedMovieRef: TMDBTransformedListItem[] | null = null;
+    #mergedTvRef: TMDBTransformedListItem[] | null = null;
+    #mergedPersonRef: TMDBTransformedListItem[] | null = null;
+    #mergedCompanyRef: TMDBTransformedListItem[] | null = null;
 
-    // Results are exactly what the API returns.
+    private ensureMergedSortedResults(): void {
+        if (
+            this.#mergedMovieRef === this.movieResults &&
+            this.#mergedTvRef === this.tvResults &&
+            this.#mergedPersonRef === this.personResults &&
+            this.#mergedCompanyRef === this.companyResults
+        ) {
+            return;
+        }
+
+        this.#mergedMovieRef = this.movieResults;
+        this.#mergedTvRef = this.tvResults;
+        this.#mergedPersonRef = this.personResults;
+        this.#mergedCompanyRef = this.companyResults;
+
+        const merged = [
+            ...this.movieResults,
+            ...this.tvResults,
+            ...this.personResults,
+            ...this.companyResults
+        ];
+
+        merged.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
+        this.#mergedSortedResults = merged;
+    }
+
     get results() {
         if (this.mediaType === "both") {
-            // Sort merged results by popularity
-            return [
-                ...this.movieResults,
-                ...this.tvResults,
-                ...this.personResults,
-                ...this.companyResults
-            ].sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
+            this.ensureMergedSortedResults();
+            return this.#mergedSortedResults;
         }
-        if (this.mediaType === "movie") return [...this.movieResults];
-        if (this.mediaType === "tv") return [...this.tvResults];
-        if (this.mediaType === "person") return [...this.personResults];
-        if (this.mediaType === "company") return [...this.companyResults];
+        if (this.mediaType === "movie") return this.movieResults;
+        if (this.mediaType === "tv") return this.tvResults;
+        if (this.mediaType === "person") return this.personResults;
+        if (this.mediaType === "company") return this.companyResults;
         return [];
     }
 
@@ -199,15 +224,18 @@ export class SearchStore {
         const newQuery = parsed?.query || "";
 
         if (!newQuery) {
+            perfCount("search.sync_query.clear");
             this.clear();
             return;
         }
 
         // Avoid re-searching if the query hasn't changed
         if (this.searchQuery === newQuery) {
+            perfCount("search.sync_query.noop", 1, { queryLength: newQuery.length });
             return;
         }
 
+        perfCount("search.sync_query.execute", 1, { queryLength: newQuery.length });
         this.setSearch(newQuery, parsed!);
         this.search();
     }
@@ -245,6 +273,12 @@ export class SearchStore {
      */
     async search(): Promise<void> {
         if (!browser) return;
+
+        const searchMark = startPerfMark("search.run", {
+            mediaType: this.mediaType,
+            hasQuery: Boolean(this.searchQuery),
+            hasFilters: Object.keys(this.filterParams).length > 0
+        });
 
         this.cancelPendingRequests();
 
@@ -299,6 +333,12 @@ export class SearchStore {
             if (!signal.aborted) {
                 this.loading = false;
             }
+
+            endPerfMark(searchMark, {
+                mediaType: this.mediaType,
+                totalResults: this.totalResults,
+                hasError: Boolean(this.error)
+            });
         }
     }
 
@@ -390,7 +430,32 @@ export class SearchStore {
         signal?: AbortSignal
     ): Promise<SearchResult> {
         const endpoint = this.buildSearchUrl(type, page);
-        const response = await fetch(endpoint, { signal });
+        const fetchMark = startPerfMark("search.fetch", {
+            type,
+            page
+        });
+        perfCount("search.fetch.request", 1, { type, page });
+
+        let response: Response;
+
+        try {
+            response = await fetch(endpoint, { signal });
+        } catch (error) {
+            endPerfMark(fetchMark, {
+                type,
+                page,
+                ok: false,
+                failed: true
+            });
+            throw error;
+        }
+
+        endPerfMark(fetchMark, {
+            type,
+            page,
+            status: response.status,
+            ok: response.ok
+        });
 
         if (!response.ok) {
             throw new Error(`Failed to fetch ${type}: ${response.statusText}`);
@@ -563,6 +628,10 @@ export class SearchStore {
             this.parsedSearch || Object.keys(this.filterParams).length > 0 || this.allowEmptySearch;
         if (!browser || this.loading || !this.hasMore || !hasSearchOrFilters) return;
 
+        const loadMoreMark = startPerfMark("search.load_more", {
+            mediaType: this.mediaType
+        });
+
         // Cancel any pending requests
         this.cancelPendingRequests();
         this.abortController = new AbortController();
@@ -598,6 +667,12 @@ export class SearchStore {
             if (!signal.aborted) {
                 this.loading = false;
             }
+
+            endPerfMark(loadMoreMark, {
+                mediaType: this.mediaType,
+                hasError: Boolean(this.error),
+                totalResults: this.totalResults
+            });
         }
     }
 

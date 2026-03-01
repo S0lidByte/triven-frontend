@@ -22,10 +22,11 @@
     import * as Pagination from "$lib/components/ui/pagination/index.js";
     import Loading2Circle from "@lucide/svelte/icons/loader-2";
     import { toast } from "svelte-sonner";
-    import { goto, invalidateAll } from "$app/navigation";
+    import { goto, invalidate } from "$app/navigation";
     import { resolve } from "$app/paths";
     import PageShell from "$lib/components/page-shell.svelte";
     import { cn } from "$lib/utils";
+    import { endPerfMark, perfCount, startPerfMark } from "$lib/perf";
 
     let { data }: PageProps = $props();
 
@@ -44,8 +45,24 @@
 
     // Live Search Logic
     let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+    let filterDebounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-    function search() {
+    const SEARCH_DEBOUNCE_MS = 300;
+    const FILTER_DEBOUNCE_MS = 180;
+
+    async function refreshLibraryData(action: string) {
+        perfCount("library.refresh", 1, { action });
+        await invalidate((url) => url.pathname === page.url.pathname);
+    }
+
+    async function search(reason: "text" | "filters" | "clear" = "text") {
+        const mark = startPerfMark("library.search.navigate", {
+            reason,
+            hasSearch: Boolean($formData.search),
+            typeCount: $formData.type?.length ?? 0,
+            stateCount: $formData.states?.length ?? 0
+        });
+
         const url = new URL(page.url);
 
         if ($formData.search) {
@@ -68,21 +85,40 @@
         url.searchParams.set("page", "1");
         $formData.page = 1;
 
-        goto(url.toString(), {
+        await goto(url.toString(), {
             keepFocus: true,
             noScroll: true,
-            invalidateAll: true
+            replaceState: true,
+            invalidate: [(target) => target.pathname === page.url.pathname]
         });
+
+        endPerfMark(mark, {
+            reason,
+            hasSearch: Boolean($formData.search),
+            typeCount: $formData.type?.length ?? 0,
+            stateCount: $formData.states?.length ?? 0
+        });
+    }
+
+    function scheduleFilterSearch() {
+        clearTimeout(filterDebounceTimer);
+        filterDebounceTimer = setTimeout(() => {
+            void search("filters");
+        }, FILTER_DEBOUNCE_MS);
     }
 
     function handleSearchInput() {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(search, 300);
+        debounceTimer = setTimeout(() => {
+            void search("text");
+        }, SEARCH_DEBOUNCE_MS);
     }
 
     onDestroy(() => {
         clearTimeout(debounceTimer);
+        clearTimeout(filterDebounceTimer);
         debounceTimer = undefined;
+        filterDebounceTimer = undefined;
     });
 </script>
 
@@ -148,7 +184,7 @@
                                 bind:value={$formData.type}
                                 onValueChange={async () => {
                                     await tick();
-                                    search();
+                                    scheduleFilterSearch();
                                 }}
                                 name={props.name}>
                                 <Select.Trigger
@@ -174,7 +210,7 @@
                                 bind:value={$formData.states}
                                 onValueChange={async () => {
                                     await tick();
-                                    search();
+                                    scheduleFilterSearch();
                                 }}
                                 name={props.name}>
                                 <Select.Trigger
@@ -280,7 +316,7 @@
                 </div>
                 <Button
                     variant="outline"
-                    onclick={() => goto(resolve("/library"), { invalidateAll: true })}
+                    onclick={() => goto(resolve("/library"), { keepFocus: true, noScroll: true })}
                     class="border-white/10 hover:bg-white/5">
                     Clear all filters
                 </Button>
@@ -332,31 +368,47 @@
                     <!-- Actions -->
                     {@render actionButton("Reset", { component: ListChecks }, async () => {
                         actionInProgress = true;
+                        const mark = startPerfMark("library.bulk_action", {
+                            action: "reset",
+                            count: itemsStore.count
+                        });
                         try {
                             await reset_items({ ids: itemsStore.items.map((id) => id.toString()) });
                             toast.success(`Reset ${itemsStore.count} items`);
                             itemsStore.clear();
-                            await invalidateAll();
+                            await refreshLibraryData("reset");
                         } catch (e) {
                             if (e instanceof Error) toast.error(`Error: ${e.message}`);
                             else toast.error("An unknown error occurred");
                         } finally {
                             actionInProgress = false;
+                            endPerfMark(mark, {
+                                action: "reset",
+                                count: itemsStore.count
+                            });
                         }
                     })}
 
                     {@render actionButton("Retry", { component: Loading2Circle }, async () => {
                         actionInProgress = true;
+                        const mark = startPerfMark("library.bulk_action", {
+                            action: "retry",
+                            count: itemsStore.count
+                        });
                         try {
                             await retry_items({ ids: itemsStore.items.map((id) => id.toString()) });
                             toast.success(`Retrying ${itemsStore.count} items`);
                             itemsStore.clear();
-                            await invalidateAll();
+                            await refreshLibraryData("retry");
                         } catch (e) {
                             if (e instanceof Error) toast.error(`Error: ${e.message}`);
                             else toast.error("An unknown error occurred");
                         } finally {
                             actionInProgress = false;
+                            endPerfMark(mark, {
+                                action: "retry",
+                                count: itemsStore.count
+                            });
                         }
                     })}
 
@@ -365,18 +417,26 @@
                         { component: Trash },
                         async () => {
                             actionInProgress = true;
+                            const mark = startPerfMark("library.bulk_action", {
+                                action: "remove",
+                                count: itemsStore.count
+                            });
                             try {
                                 await remove_items({
                                     ids: itemsStore.items.map((id) => id.toString())
                                 });
                                 toast.success(`Removed ${itemsStore.count} items`);
                                 itemsStore.clear();
-                                await invalidateAll();
+                                await refreshLibraryData("remove");
                             } catch (e) {
                                 if (e instanceof Error) toast.error(`Error: ${e.message}`);
                                 else toast.error("An unknown error occurred");
                             } finally {
                                 actionInProgress = false;
+                                endPerfMark(mark, {
+                                    action: "remove",
+                                    count: itemsStore.count
+                                });
                             }
                         },
                         "destructive"

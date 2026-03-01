@@ -11,6 +11,7 @@
     import type { createSidebarStore } from "$lib/stores/global.svelte";
     import type { SearchStore } from "$lib/services/search-store.svelte";
     import { parseSearchQuery } from "$lib/search-parser";
+    import { endPerfMark, perfCount, startPerfMark } from "$lib/perf";
 
     const SidebarStore = getContext<createSidebarStore>("sidebarStore");
     const searchStore = getContext<SearchStore>("searchStore");
@@ -41,7 +42,11 @@
     // Local input value state to decouple from URL updates while typing
     let inputValue = $state(page.url.searchParams.get("query") || "");
     let inputRef = $state<HTMLInputElement | null>(null);
-    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+    let localSearchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+    let urlNavigationDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const LOCAL_SEARCH_DEBOUNCE_MS = 120;
+    const URL_NAVIGATION_DEBOUNCE_MS = 700;
 
     // Sync external URL changes to input, but avoid overwriting while typing
     // We use afterNavigate instead of $effect to avoid state loops
@@ -54,10 +59,7 @@
         }
     });
 
-    async function navigateToSearch() {
-        clearTimeout(debounceTimer);
-        // Read directly from local state
-        const query = inputValue.trim();
+    function applyLocalSearch(query: string) {
         const currentlyExplore = page.url.pathname === "/explore";
 
         // Client-first search: Immediately update store if we're on the explore page
@@ -66,22 +68,63 @@
         if (currentlyExplore) {
             const parsed = parseSearchQuery(query);
             searchStore.syncQuery(parsed);
+            perfCount("explore.search.local_sync", 1, { queryLength: query.length });
         }
+    }
+
+    async function navigateToSearch(force = false) {
+        clearTimeout(localSearchDebounceTimer);
+        clearTimeout(urlNavigationDebounceTimer);
+
+        const query = inputValue.trim();
+        const currentlyExplore = page.url.pathname === "/explore";
+        const currentQuery = page.url.searchParams.get("query") || "";
+
+        applyLocalSearch(query);
+
+        if (!force && currentlyExplore && query === currentQuery) {
+            return;
+        }
+
+        const navMark = startPerfMark("explore.search.navigate", {
+            currentlyExplore,
+            queryLength: query.length,
+            force
+        });
 
         await goto(query ? `/explore?query=${encodeURIComponent(query)}` : "/explore", {
             keepFocus: true,
             noScroll: true,
             replaceState: currentlyExplore
         });
+
+        endPerfMark(navMark, {
+            currentlyExplore,
+            queryLength: query.length,
+            force
+        });
     }
 
     function handleInput() {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(navigateToSearch, 300);
+        clearTimeout(localSearchDebounceTimer);
+        clearTimeout(urlNavigationDebounceTimer);
+
+        const query = inputValue.trim();
+
+        localSearchDebounceTimer = setTimeout(() => {
+            applyLocalSearch(query);
+        }, LOCAL_SEARCH_DEBOUNCE_MS);
+
+        urlNavigationDebounceTimer = setTimeout(() => {
+            void navigateToSearch(false);
+        }, URL_NAVIGATION_DEBOUNCE_MS);
     }
 
     $effect(() => {
-        return () => clearTimeout(debounceTimer);
+        return () => {
+            clearTimeout(localSearchDebounceTimer);
+            clearTimeout(urlNavigationDebounceTimer);
+        };
     });
 
     function onKeydown(e: KeyboardEvent) {
@@ -112,7 +155,7 @@
                     onkeydown={(e) => {
                         if (e.key === "Enter") {
                             e.preventDefault();
-                            navigateToSearch();
+                            void navigateToSearch(true);
                         }
                     }}
                     autocomplete="off" />
