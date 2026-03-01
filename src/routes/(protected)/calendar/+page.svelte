@@ -104,27 +104,48 @@
     }
 
     function getItemUrl(item: EntertainmentItem): string | null {
-        if (!item.tmdb_id) return null;
         const type = item.item_type === "movie" ? "movie" : "tv";
         if (import.meta.env.DEV && !["movie", "show", "season", "episode"].includes(item.item_type)) {
             console.warn(`Calendar: unknown item_type "${item.item_type}" for "${item.show_title}"`);
         }
 
-        const baseUrl = `/details/media/${item.tmdb_id}/${type}`;
-        if (type === "movie") return baseUrl;
+        const hasTmdb = item.tmdb_id !== undefined && item.tmdb_id !== null && `${item.tmdb_id}`.trim() !== "";
+        const hasTvdb = item.tvdb_id !== undefined && item.tvdb_id !== null && `${item.tvdb_id}`.trim() !== "";
+
+        if (type === "movie") {
+            return hasTmdb ? `/details/media/${item.tmdb_id}/movie` : null;
+        }
+
+        if (!hasTmdb && !hasTvdb) {
+            if (import.meta.env.DEV) {
+                console.warn(`Calendar: missing tmdb_id and tvdb_id for "${item.show_title}"`);
+            }
+            return null;
+        }
+
+        const mediaId = hasTmdb ? `${item.tmdb_id}` : `${item.tvdb_id}`;
+        const params = new URLSearchParams();
+
+        if (!hasTmdb && hasTvdb) {
+            params.set("indexer", "tvdb");
+        }
 
         const hasSeason = item.season !== undefined && item.season !== null;
         const hasEpisode = item.episode !== undefined && item.episode !== null;
 
         if (item.item_type === "episode" && hasSeason && hasEpisode) {
-            return `${baseUrl}?season=${item.season}&episode=${item.episode}`;
+            params.set("season", String(item.season));
+            params.set("episode", String(item.episode));
         }
 
-        if ((item.item_type === "season" || item.item_type === "episode") && hasSeason) {
-            return `${baseUrl}?season=${item.season}`;
+        if (item.item_type === "season" && hasSeason) {
+            params.set("season", String(item.season));
+        } else if (item.item_type === "episode" && hasSeason && !hasEpisode) {
+            params.set("season", String(item.season));
         }
 
-        return baseUrl;
+        const query = params.toString();
+        return `/details/media/${mediaId}/tv${query ? `?${query}` : ""}`;
     }
 
     const itemsByDate = $derived.by(() => {
