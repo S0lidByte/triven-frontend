@@ -108,14 +108,29 @@ async function loadExploreLandingData(
             })
         ]);
 
-    const heroMovieResults = transformTMDBList((trendingMovies.data?.results as TMDBListItem[]) ?? []);
-    const heroTvResults = transformTMDBList((trendingTV.data?.results as TMDBListItem[]) ?? [], "tv");
+    const heroMovieResults = transformTMDBList(
+        (trendingMovies.data?.results as TMDBListItem[]) ?? []
+    );
+    const heroTvResults = transformTMDBList(
+        (trendingTV.data?.results as TMDBListItem[]) ?? [],
+        "tv"
+    );
 
-    const popularMovieResults = transformTMDBList((popularMovies.data?.results as TMDBListItem[]) ?? []);
-    const popularTvResults = transformTMDBList((popularTV.data?.results as TMDBListItem[]) ?? [], "tv");
+    const popularMovieResults = transformTMDBList(
+        (popularMovies.data?.results as TMDBListItem[]) ?? []
+    );
+    const popularTvResults = transformTMDBList(
+        (popularTV.data?.results as TMDBListItem[]) ?? [],
+        "tv"
+    );
 
-    const topRatedMovieResults = transformTMDBList((topRatedMovies.data?.results as TMDBListItem[]) ?? []);
-    const topRatedTvResults = transformTMDBList((topRatedTV.data?.results as TMDBListItem[]) ?? [], "tv");
+    const topRatedMovieResults = transformTMDBList(
+        (topRatedMovies.data?.results as TMDBListItem[]) ?? []
+    );
+    const topRatedTvResults = transformTMDBList(
+        (topRatedTV.data?.results as TMDBListItem[]) ?? [],
+        "tv"
+    );
 
     const heroItems = shuffleArray([...heroMovieResults.slice(0, 5), ...heroTvResults.slice(0, 5)]);
 

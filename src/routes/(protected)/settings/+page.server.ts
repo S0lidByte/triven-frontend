@@ -5,7 +5,12 @@ import type { InitialFormData } from "@sjsf/sveltekit";
 import { createFormHandler, type FormHandlerOptions } from "@sjsf/sveltekit/server";
 import * as defaults from "$lib/components/settings/form-defaults";
 import type { UiSchemaRoot } from "@sjsf/form";
-import { DEFAULT_TAB_ID, getPathsForTab, getTabById, SETTINGS_TABS } from "$lib/components/settings/sections";
+import {
+    DEFAULT_TAB_ID,
+    getPathsForTab,
+    getTabById,
+    SETTINGS_TABS
+} from "$lib/components/settings/sections";
 import { perfCount, startPerfMark, endPerfMark } from "$lib/perf";
 
 const SETTINGS_SCHEMA_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -291,12 +296,7 @@ export const actions = {
             perfCount("settings.schema.cache.hit", 1, { tab: tab.id });
         } else {
             perfCount("settings.schema.cache.miss", 1, { tab: tab.id });
-            schema = await getSchemaForKeys(
-                locals.backendUrl,
-                locals.apiKey,
-                paths,
-                fetch
-            );
+            schema = await getSchemaForKeys(locals.backendUrl, locals.apiKey, paths, fetch);
             setCachedSettingsSchema(schemaCacheKey, schema);
             perfCount("settings.schema.cache.set", 1, { tab: tab.id });
         }

@@ -47,4 +47,3 @@ export function perfCount(name: string, value = 1, meta?: Record<string, unknown
     if (!PERF_METRICS_ENABLED) return;
     logger.info(`[perf:count] ${name}`, { value, ...(meta ?? {}) });
 }
-
