@@ -160,6 +160,15 @@ export const load: PageServerLoad = async ({ url, fetch }) => {
     const form = await superValidate(url.searchParams, zod4(searchSchema));
     const parsed = parseSearchQuery(form.data.query || "");
 
+    // Merge any other parameters from the URL that aren't 'query' or 'type'
+    // into tmdbParams so they are correctly synced to the SearchStore
+    const { query: _, type: __, ...filters } = form.data;
+    for (const [key, value] of Object.entries(filters)) {
+        if (value !== undefined && value !== null && value !== "") {
+            (parsed.tmdbParams as any)[key] = value;
+        }
+    }
+
     const hasQuery = (form.data.query || "").trim().length > 0;
 
     // Fetch trending content for search examples and hero only on landing (empty query)

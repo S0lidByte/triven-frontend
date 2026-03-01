@@ -241,42 +241,40 @@ export class SearchStore {
         }
     }
 
-    /**
-     * Syncs the store with a new parsed search query.
-     * Handles diffing and triggering search/clear automatically.
-     */
     syncQuery(parsed: ParsedSearchQuery | null) {
-        const newQuery = parsed?.query || "";
+        if (!parsed) {
+            this.clear();
+            return;
+        }
 
-        if (!newQuery) {
-            const parsedTMDBParams = Object.keys(parsed?.tmdbParams ?? {}).filter(
-                (key) => key !== "query"
-            );
+        const newQuery = parsed.query || "";
+        const hasFilters = Object.keys(parsed.tmdbParams).filter((key) => key !== "query").length > 0;
 
-            if (parsed && parsedTMDBParams.length > 0) {
-                logger.warn(
-                    "syncQuery received empty text query with non-empty TMDB params; search will be cleared",
-                    {
-                        searchMode: parsed.searchMode,
-                        tmdbParamKeys: parsedTMDBParams,
-                        warnings: parsed.warnings
-                    }
-                );
-            }
-
+        // If content is empty and no filters, just clear
+        if (!newQuery && !hasFilters) {
             perfCount("search.sync_query.clear");
             this.clear();
             return;
         }
 
-        // Avoid re-searching if the query hasn't changed
-        if (this.searchQuery === newQuery) {
+        // Avoid re-searching if nothing has changed (query OR filters)
+        // We compare the stringified params to detect changes in filter values
+        const queryChanged = this.searchQuery !== newQuery;
+        const filtersChanged =
+            JSON.stringify(parsed.tmdbParams) !== JSON.stringify(this.parsedSearch?.tmdbParams);
+
+        if (!queryChanged && !filtersChanged) {
             perfCount("search.sync_query.noop", 1, { queryLength: newQuery.length });
             return;
         }
 
-        perfCount("search.sync_query.execute", 1, { queryLength: newQuery.length });
-        this.setSearch(newQuery, parsed!);
+        perfCount("search.sync_query.execute", 1, {
+            queryLength: newQuery.length,
+            queryChanged,
+            filtersChanged
+        });
+
+        this.setSearch(newQuery, parsed);
         this.search();
     }
 
@@ -637,10 +635,10 @@ export class SearchStore {
                 type === "movie"
                     ? this.movieResults
                     : type === "person"
-                      ? this.personResults
-                      : type === "company"
-                        ? this.companyResults
-                        : this.tvResults; // This line was already correct.
+                        ? this.personResults
+                        : type === "company"
+                            ? this.companyResults
+                            : this.tvResults; // This line was already correct.
             const uniqueNewItems = this.deduplicateItems(items, currentResults);
 
             if (type === "movie") {
@@ -703,10 +701,10 @@ export class SearchStore {
             type === "movie"
                 ? this.moviePage
                 : type === "person"
-                  ? this.personPage
-                  : type === "company"
-                    ? this.companyPage
-                    : this.tvPage;
+                    ? this.personPage
+                    : type === "company"
+                        ? this.companyPage
+                        : this.tvPage;
 
         try {
             const result = await this.fetchSearchResults(type, page, signal);
@@ -720,10 +718,10 @@ export class SearchStore {
                     type === "movie"
                         ? this.movieResults
                         : type === "person"
-                          ? this.personResults
-                          : type === "company"
-                            ? this.companyResults
-                            : this.tvResults;
+                            ? this.personResults
+                            : type === "company"
+                                ? this.companyResults
+                                : this.tvResults;
                 const uniqueNewItems = this.deduplicateItems(newItems, currentResults);
 
                 if (type === "movie") {
