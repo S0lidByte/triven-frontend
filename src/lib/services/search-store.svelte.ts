@@ -109,6 +109,18 @@ export class SearchStore {
         this.#mergedSortedResults = merged;
     }
 
+    private canFetchMediaType(type: "movie" | "tv" | "person" | "company"): boolean {
+        if (type === "person" || type === "company") {
+            const hasTextQuery = Boolean(this.parsedSearch?.query?.trim());
+            if (!hasTextQuery) {
+                logger.debug(`Skipping ${type} fetch because text query is empty`);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     get results() {
         if (this.mediaType === "both") {
             this.ensureMergedSortedResults();
@@ -201,8 +213,21 @@ export class SearchStore {
             const promises: Promise<void>[] = [];
             if (needMovies) promises.push(this.fetchMedia("movie", 1, signal));
             if (needTV) promises.push(this.fetchMedia("tv", 1, signal));
-            if (needPerson) promises.push(this.fetchMedia("person", 1, signal));
-            if (needCompany) promises.push(this.fetchMedia("company", 1, signal));
+            if (needPerson && this.canFetchMediaType("person")) {
+                promises.push(this.fetchMedia("person", 1, signal));
+            } else if (needPerson) {
+                this.personHasMore = false;
+                this.totalResultsPerson = 0;
+                this.personResults = [];
+            }
+
+            if (needCompany && this.canFetchMediaType("company")) {
+                promises.push(this.fetchMedia("company", 1, signal));
+            } else if (needCompany) {
+                this.companyHasMore = false;
+                this.totalResultsCompany = 0;
+                this.companyResults = [];
+            }
 
             await Promise.all(promises);
         } catch (error) {
@@ -224,6 +249,21 @@ export class SearchStore {
         const newQuery = parsed?.query || "";
 
         if (!newQuery) {
+            const parsedTMDBParams = Object.keys(parsed?.tmdbParams ?? {}).filter(
+                (key) => key !== "query"
+            );
+
+            if (parsed && parsedTMDBParams.length > 0) {
+                logger.warn(
+                    "syncQuery received empty text query with non-empty TMDB params; search will be cleared",
+                    {
+                        searchMode: parsed.searchMode,
+                        tmdbParamKeys: parsedTMDBParams,
+                        warnings: parsed.warnings
+                    }
+                );
+            }
+
             perfCount("search.sync_query.clear");
             this.clear();
             return;
@@ -249,12 +289,20 @@ export class SearchStore {
         // Reset state for new search
         this.moviePage = 1;
         this.tvPage = 1;
+        this.personPage = 1;
+        this.companyPage = 1;
         this.movieHasMore = true;
         this.tvHasMore = true;
+        this.personHasMore = true;
+        this.companyHasMore = true;
         this.movieResults = [];
         this.tvResults = [];
+        this.personResults = [];
+        this.companyResults = [];
         this.totalResultsMovie = 0;
         this.totalResultsTV = 0;
+        this.totalResultsPerson = 0;
+        this.totalResultsCompany = 0;
     }
 
     /**
@@ -291,6 +339,43 @@ export class SearchStore {
             this.moviePage = 1;
             this.tvPage = 1;
 
+            const runFetchWithTrace = async (
+                type: "movie" | "tv" | "person" | "company"
+            ): Promise<void> => {
+                if (!this.canFetchMediaType(type)) {
+                    if (type === "person") {
+                        this.personHasMore = false;
+                        this.totalResultsPerson = 0;
+                        this.personResults = [];
+                    } else if (type === "company") {
+                        this.companyHasMore = false;
+                        this.totalResultsCompany = 0;
+                        this.companyResults = [];
+                    }
+                    return;
+                }
+
+                const startedAt = performance.now();
+                try {
+                    await this.fetchMedia(type, 1, signal);
+                } catch (err) {
+                    logger.error(`search fetch failed for media type '${type}'`, {
+                        mediaType: this.mediaType,
+                        rawSearchString: this.rawSearchString,
+                        parsedQuery: this.parsedSearch?.query,
+                        parsedSearchMode: this.parsedSearch?.searchMode,
+                        filterParamKeys: Object.keys(this.filterParams),
+                        error: err instanceof Error ? err.message : String(err)
+                    });
+                    throw err;
+                } finally {
+                    logger.debug(`search fetch completed for media type '${type}'`, {
+                        durationMs: Number((performance.now() - startedAt).toFixed(2)),
+                        aborted: signal.aborted
+                    });
+                }
+            };
+
             if (this.mediaType === "both") {
                 this.movieResults = [];
                 this.tvResults = [];
@@ -300,28 +385,44 @@ export class SearchStore {
                 this.totalResultsTV = 0;
                 this.totalResultsPerson = 0;
                 this.totalResultsCompany = 0;
+
+                if (
+                    this.parsedSearch?.searchMode === "discover" &&
+                    !this.parsedSearch?.query &&
+                    !this.allowEmptySearch
+                ) {
+                    logger.warn(
+                        "Search is in discover mode without text query while mediaType='both'; person/company fetches may fail and abort whole request",
+                        {
+                            mediaType: this.mediaType,
+                            parsedSearchMode: this.parsedSearch.searchMode,
+                            filterParamKeys: Object.keys(this.filterParams)
+                        }
+                    );
+                }
+
                 await Promise.all([
-                    this.fetchMedia("movie", 1, signal),
-                    this.fetchMedia("tv", 1, signal),
-                    this.fetchMedia("person", 1, signal),
-                    this.fetchMedia("company", 1, signal)
+                    runFetchWithTrace("movie"),
+                    runFetchWithTrace("tv"),
+                    runFetchWithTrace("person"),
+                    runFetchWithTrace("company")
                 ]);
             } else if (this.mediaType === "movie") {
                 this.movieResults = [];
                 this.totalResultsMovie = 0;
-                await this.fetchMedia("movie", 1, signal);
+                await runFetchWithTrace("movie");
             } else if (this.mediaType === "tv") {
                 this.tvResults = [];
                 this.totalResultsTV = 0;
-                await this.fetchMedia("tv", 1, signal);
+                await runFetchWithTrace("tv");
             } else if (this.mediaType === "person") {
                 this.personResults = [];
                 this.totalResultsPerson = 0;
-                await this.fetchMedia("person", 1, signal);
+                await runFetchWithTrace("person");
             } else if (this.mediaType === "company") {
                 this.companyResults = [];
                 this.totalResultsCompany = 0;
-                await this.fetchMedia("company", 1, signal);
+                await runFetchWithTrace("company");
             }
         } catch (error) {
             if (error instanceof Error && error.name === "AbortError") {
@@ -399,6 +500,16 @@ export class SearchStore {
         // TMDB's search endpoints don't support most filter params
         const searchMode = hasFilters ? "discover" : this.parsedSearch?.searchMode || "discover";
 
+        if ((type === "person" || type === "company") && searchMode === "discover") {
+            logger.warn("Building discover-mode search URL for person/company", {
+                type,
+                page,
+                parsedSearchMode: this.parsedSearch?.searchMode,
+                hasFilters,
+                hasTextQuery: Boolean(this.parsedSearch?.query)
+            });
+        }
+
         const params = {
             ...(this.parsedSearch?.tmdbParams || {}),
             ...this.filterParams,
@@ -469,6 +580,19 @@ export class SearchStore {
         page: number,
         signal?: AbortSignal
     ): Promise<void> {
+        if (!this.canFetchMediaType(type)) {
+            if (type === "person") {
+                this.personHasMore = false;
+                this.totalResultsPerson = 0;
+                this.personResults = [];
+            } else if (type === "company") {
+                this.companyHasMore = false;
+                this.totalResultsCompany = 0;
+                this.companyResults = [];
+            }
+            return;
+        }
+
         // Allow fetch if we have either a parsed search, filter params, or if empty search is allowed
         if (
             !this.parsedSearch &&
@@ -545,6 +669,15 @@ export class SearchStore {
         type: "movie" | "tv" | "person" | "company",
         signal?: AbortSignal
     ): Promise<void> {
+        if (!this.canFetchMediaType(type)) {
+            if (type === "person") {
+                this.personHasMore = false;
+            } else if (type === "company") {
+                this.companyHasMore = false;
+            }
+            return;
+        }
+
         // Allow load more if we have either a parsed search, filter params, or if empty search is allowed
         if (
             !this.parsedSearch &&
@@ -646,9 +779,13 @@ export class SearchStore {
             const shouldLoadTV =
                 (this.mediaType === "both" || this.mediaType === "tv") && this.tvHasMore;
             const shouldLoadPerson =
-                (this.mediaType === "both" || this.mediaType === "person") && this.personHasMore;
+                (this.mediaType === "both" || this.mediaType === "person") &&
+                this.personHasMore &&
+                this.canFetchMediaType("person");
             const shouldLoadCompany =
-                (this.mediaType === "both" || this.mediaType === "company") && this.companyHasMore;
+                (this.mediaType === "both" || this.mediaType === "company") &&
+                this.companyHasMore &&
+                this.canFetchMediaType("company");
 
             const promises: Promise<void>[] = [];
             if (shouldLoadMovies) promises.push(this.loadMoreMedia("movie", signal));
@@ -688,14 +825,20 @@ export class SearchStore {
         this.companyResults = [];
         this.moviePage = 1;
         this.tvPage = 1;
+        this.personPage = 1;
+        this.companyPage = 1;
         this.movieHasMore = true;
         this.tvHasMore = true;
+        this.personHasMore = true;
+        this.companyHasMore = true;
         this.error = null;
         this.warnings = [];
         this.loading = false;
         this.filterParams = {};
         this.totalResultsMovie = 0;
         this.totalResultsTV = 0;
+        this.totalResultsPerson = 0;
+        this.totalResultsCompany = 0;
     }
 
     /**

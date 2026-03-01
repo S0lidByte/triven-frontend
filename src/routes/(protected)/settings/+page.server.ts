@@ -12,6 +12,9 @@ import {
     SETTINGS_TABS
 } from "$lib/components/settings/sections";
 import { perfCount, startPerfMark, endPerfMark } from "$lib/perf";
+import { createScopedLogger } from "$lib/logger";
+
+const logger = createScopedLogger("settings-page-server");
 
 const SETTINGS_SCHEMA_CACHE_TTL_MS = 10 * 60 * 1000;
 
@@ -176,14 +179,40 @@ async function loadSettingsDataWithRetry(
         const timeoutMs =
             attempt === 1 ? SETTINGS_FETCH_TIMEOUT_MS : SETTINGS_FETCH_RETRY_TIMEOUT_MS;
         const fetchWithTimeout = createFetchWithTimeout(timeoutMs);
+        const attemptStartedAt = Date.now();
+
+        logger.info("Loading settings data attempt started", {
+            attempt,
+            maxAttempts: SETTINGS_FETCH_MAX_ATTEMPTS,
+            timeoutMs,
+            keyCount: keys.split(",").filter(Boolean).length,
+            pathCount: paths.split(",").filter(Boolean).length
+        });
 
         try {
-            return (await Promise.all([
+            const result = (await Promise.all([
                 getSchemaForKeys(backendUrl, apiKey, keys, fetchWithTimeout),
                 getSettingsForPaths(backendUrl, apiKey, paths, fetchWithTimeout)
             ])) as [Record<string, unknown>, Record<string, unknown>];
+
+            logger.info("Loading settings data attempt succeeded", {
+                attempt,
+                durationMs: Date.now() - attemptStartedAt,
+                timeoutMs
+            });
+
+            return result;
         } catch (e) {
             lastError = e;
+
+            logger.warn("Loading settings data attempt failed", {
+                attempt,
+                timeoutMs,
+                durationMs: Date.now() - attemptStartedAt,
+                timeoutError: isTimeoutError(e),
+                error: e instanceof Error ? e.message : String(e)
+            });
+
             if (!isTimeoutError(e) || attempt === SETTINGS_FETCH_MAX_ATTEMPTS) {
                 break;
             }
@@ -196,11 +225,13 @@ async function loadSettingsDataWithRetry(
 export const load: PageServerLoad = async ({
     fetch,
     locals,
-    url
+    url,
+    request
 }: {
     fetch: typeof globalThis.fetch;
     locals: App.Locals;
     url: URL;
+    request: Request;
 }) => {
     const mark = startPerfMark("settings.load", {
         tab: url.searchParams.get("tab") ?? DEFAULT_TAB_ID
@@ -216,6 +247,16 @@ export const load: PageServerLoad = async ({
     const keys = paths;
     const schemaCacheKey = getSettingsSchemaCacheKey(locals.backendUrl, tab.id, paths);
 
+    logger.info("Settings page load started", {
+        tab: tab.id,
+        keyCount: keys.split(",").filter(Boolean).length,
+        pathCount: paths.split(",").filter(Boolean).length,
+        referer: request.headers.get("referer"),
+        purpose: request.headers.get("purpose") ?? request.headers.get("sec-purpose"),
+        secFetchMode: request.headers.get("sec-fetch-mode"),
+        secFetchDest: request.headers.get("sec-fetch-dest")
+    });
+
     let schema: Record<string, unknown>;
     let initialValue: Record<string, unknown>;
 
@@ -227,6 +268,12 @@ export const load: PageServerLoad = async ({
             paths
         );
     } catch (e) {
+        logger.error("Settings page load failed", {
+            tab: tab.id,
+            timeoutError: isTimeoutError(e),
+            error: e instanceof Error ? e.message : String(e)
+        });
+
         if (isTimeoutError(e)) {
             error(
                 504,
@@ -245,6 +292,11 @@ export const load: PageServerLoad = async ({
     });
 
     endPerfMark(mark, {
+        tab: tab.id,
+        propertyCount: Object.keys(props).length
+    });
+
+    logger.info("Settings page load completed", {
         tab: tab.id,
         propertyCount: Object.keys(props).length
     });
