@@ -1,13 +1,6 @@
 <script lang="ts">
-    import type { ActionData, PageData } from "./$types";
-    import { BasicForm } from "@sjsf/form";
-    import { createMeta, setupSvelteKitForm } from "@sjsf/sveltekit/client";
-    import * as defaults from "$lib/components/settings/form-defaults";
-    import { setShadcnContext } from "$lib/components/shadcn-context";
-    import { toast } from "svelte-sonner";
-    import { icons } from "@sjsf/lucide-icons";
+    import type { FormState } from "@sjsf/form";
     import PageShell from "$lib/components/page-shell.svelte";
-    import * as Card from "$lib/components/ui/card/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Tooltip from "$lib/components/ui/tooltip/index.js";
     import { Separator } from "$lib/components/ui/separator/index.js";
@@ -21,52 +14,27 @@
         AlertDialogHeader,
         AlertDialogTitle
     } from "$lib/components/ui/alert-dialog/index.js";
-    import HelpCircle from "@lucide/svelte/icons/help-circle";
+    import SettingsFormContent from "$lib/components/settings/settings-form-content.svelte";
     import { cn } from "$lib/utils";
     import { goto } from "$app/navigation";
-    import { get } from "svelte/store";
-    import { page } from "$app/stores";
-    import { getTabById } from "$lib/components/settings/sections";
+    import { navigating, page } from "$app/stores";
+    import { writable } from "svelte/store";
 
-    setShadcnContext();
+    /** Form ref from keyed SettingsFormContent - updates when tab changes (remount) */
+    const formStore = writable<FormState<any> | null>(null);
+    const form = $derived($formStore);
 
-    const meta = createMeta<ActionData, PageData>().form;
-
-    const { form } = setupSvelteKitForm(meta, {
-        ...defaults,
-        icons,
-        delayedMs: 500,
-        timeoutMs: 30000,
-        onSuccess: (result) => {
-            if (result.type === "success") {
-                const tabId = get(page).url.searchParams.get("tab") ?? "general";
-                const tab = getTabById(tabId);
-                if (tab?.restartRequired) {
-                    toast.success("Settings saved. Some changes may take effect after restart.");
-                } else {
-                    toast.success("Settings saved");
-                }
-            } else {
-                toast.error("Failed to save settings");
-            }
-        },
-        onFailure: () => {
-            toast.error("Something went wrong while saving settings");
-        }
-    });
-
-    let cardRef: HTMLDivElement | null = null;
     let tabSwitchTarget: string | null = null;
     let showDiscardConfirm = $state(false);
 
     function submitSettingsForm() {
-        const formEl = cardRef?.querySelector("form");
-        formEl?.requestSubmit();
+        const formEl = document.querySelector(".settings-form form");
+        (formEl as HTMLFormElement)?.requestSubmit();
     }
 
     function handleTabClick(tabId: string) {
         if (tabId === $page.data.activeTabId) return;
-        if (form.isChanged) {
+        if (form?.isChanged) {
             tabSwitchTarget = tabId;
             showDiscardConfirm = true;
         } else {
@@ -76,7 +44,7 @@
 
     function confirmDiscardAndSwitch() {
         if (tabSwitchTarget) {
-            form.reset();
+            form?.reset();
             goto(`/settings?tab=${tabSwitchTarget}`);
             tabSwitchTarget = null;
         }
@@ -89,36 +57,12 @@
     }
 
     /** Form store exposes isChanged (not isDirty) - use for save bar and tab-switch guard */
-    const isDirty = $derived(form.isChanged);
+    const isDirty = $derived(form?.isChanged ?? false);
 </script>
 
 <svelte:head>
     <title>Settings - Riven</title>
 </svelte:head>
-
-<style>
-    /* Typography and a11y polish for settings form */
-    .settings-form [data-slot="field-label"] {
-        font-weight: 600;
-    }
-
-    .settings-form [data-slot="field-description"] {
-        color: var(--color-muted-foreground);
-        font-size: 0.8125rem;
-        line-height: 1.4;
-    }
-
-    .settings-form [data-slot="input"],
-    .settings-form [data-slot="textarea"],
-    .settings-form [data-slot="select-trigger"] {
-        min-height: 2.25rem;
-    }
-
-    .settings-form :focus-visible {
-        outline: 2px solid var(--color-ring);
-        outline-offset: 2px;
-    }
-</style>
 
 <PageShell class="h-full">
     <Tooltip.Provider>
@@ -168,36 +112,18 @@
                     {/each}
                 </nav>
 
-                <!-- Right: form -->
-                <div class="min-w-0 flex-1">
-                    <Card.Root bind:ref={cardRef} class={cn("bg-card border-border shadow-sm")}>
-                        <Card.Header class="space-y-1.5 pb-4">
-                            <div class="flex items-center gap-2">
-                                <Card.Title class="text-lg font-semibold text-neutral-200">
-                                    {$page.data.tabs.find((t: { id: string }) => t.id === $page.data.activeTabId)?.label ?? "Settings"}
-                                </Card.Title>
-                                <Tooltip.Root>
-                                    <Tooltip.Trigger>
-                                        <HelpCircle
-                                            class="text-muted-foreground hover:text-foreground size-4 shrink-0 cursor-help"
-                                            aria-label="Help"
-                                        />
-                                    </Tooltip.Trigger>
-                                    <Tooltip.Content side="right" class="max-w-xs text-balance">
-                                        Edit values below and click Save to apply. Some options may require a restart.
-                                    </Tooltip.Content>
-                                </Tooltip.Root>
-                            </div>
-                        </Card.Header>
-                        <Card.Content class="space-y-6">
-                            <BasicForm {form} method="POST" class="settings-form" />
-                        </Card.Content>
-                        <Card.Footer class="flex flex-row items-center justify-end gap-2 border-t border-border bg-muted/30 px-6 py-4">
-                            <Button type="button" onclick={submitSettingsForm}>
-                                Save changes
-                            </Button>
-                        </Card.Footer>
-                    </Card.Root>
+                <!-- Right: form - keyed by activeTabId so form remounts and loads correct schema when tab changes -->
+                <div class="min-w-0 flex-1 relative">
+                    {#if $navigating}
+                        <div
+                            class="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-muted/50"
+                            aria-live="polite">
+                            <span class="text-muted-foreground text-sm">Loading…</span>
+                        </div>
+                    {/if}
+                    {#key $page.data.activeTabId}
+                        <SettingsFormContent {formStore} />
+                    {/key}
                 </div>
             </div>
 
@@ -209,7 +135,7 @@
                     aria-live="polite">
                     <span class="text-sm text-muted-foreground">You have unsaved changes</span>
                     <div class="flex gap-2">
-                        <Button variant="outline" size="sm" onclick={() => form.reset()}>
+                        <Button variant="outline" size="sm" onclick={() => form?.reset()}>
                             Discard
                         </Button>
                         <Button size="sm" onclick={submitSettingsForm}>
