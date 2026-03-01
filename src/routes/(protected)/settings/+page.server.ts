@@ -58,18 +58,72 @@ const SETTINGS_FETCH_TIMEOUT_MS = 20_000;
 const SETTINGS_FETCH_RETRY_TIMEOUT_MS = 60_000;
 const SETTINGS_FETCH_MAX_ATTEMPTS = 2;
 
+class SettingsFetchTimeoutError extends Error {
+    constructor(timeoutMs: number) {
+        super(`Settings fetch timed out after ${timeoutMs}ms`);
+        this.name = "SettingsFetchTimeoutError";
+    }
+}
+
+function mergeAbortSignals(
+    primary: AbortSignal,
+    secondary: AbortSignal | null | undefined
+): AbortSignal {
+    if (!secondary) return primary;
+
+    const controller = new AbortController();
+    const abortFrom = (signal: AbortSignal) => {
+        try {
+            const signalWithReason = signal as AbortSignal & { reason?: unknown };
+            controller.abort(signalWithReason.reason);
+        } catch {
+            controller.abort();
+        }
+    };
+
+    if (primary.aborted) {
+        abortFrom(primary);
+        return controller.signal;
+    }
+
+    if (secondary.aborted) {
+        abortFrom(secondary);
+        return controller.signal;
+    }
+
+    primary.addEventListener("abort", () => abortFrom(primary), { once: true });
+    secondary.addEventListener("abort", () => abortFrom(secondary), { once: true });
+    return controller.signal;
+}
+
 function createFetchWithTimeout(timeoutMs: number = SETTINGS_FETCH_TIMEOUT_MS): typeof fetch {
-    return (input: RequestInfo | URL, init?: RequestInit) => {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeoutMs);
-        return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(id));
+    return async (input: RequestInfo | URL, init?: RequestInit) => {
+        const timeoutController = new AbortController();
+        let didTimeout = false;
+        const id = setTimeout(() => {
+            didTimeout = true;
+            timeoutController.abort();
+        }, timeoutMs);
+
+        try {
+            const signal = mergeAbortSignals(timeoutController.signal, init?.signal);
+            return await fetch(input, { ...init, signal });
+        } catch (e) {
+            if (didTimeout) {
+                throw new SettingsFetchTimeoutError(timeoutMs);
+            }
+            throw e;
+        } finally {
+            clearTimeout(id);
+        }
     };
 }
 
 function isTimeoutError(e: unknown): boolean {
+    if (e instanceof SettingsFetchTimeoutError) return true;
     const message = e instanceof Error ? e.message : String(e);
     const normalized = message.toLowerCase();
-    return normalized.includes("abort") || normalized.includes("timeout") || normalized.includes("timed out");
+    return normalized.includes("timeout") || normalized.includes("timed out");
 }
 
 async function loadSettingsDataWithRetry(

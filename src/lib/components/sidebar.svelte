@@ -52,7 +52,7 @@
             <Tooltip>
                 {#snippet trigger()}
                     <a
-                        data-sveltekit-preload-data="hover"
+                        data-sveltekit-preload-data={item.href === "/settings" ? "tap" : "hover"}
                         href={resolve(item.href)}
                         class="hover:bg-accent/80 group relative flex h-10 w-10 items-center justify-center rounded-md transition-colors"
                         class:bg-accent={page.url.pathname === resolve(item.href)}
