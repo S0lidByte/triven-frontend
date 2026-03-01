@@ -248,7 +248,8 @@ export class SearchStore {
         }
 
         const newQuery = parsed.query || "";
-        const hasFilters = Object.keys(parsed.tmdbParams).filter((key) => key !== "query").length > 0;
+        const hasFilters =
+            Object.keys(parsed.tmdbParams).filter((key) => key !== "query").length > 0;
 
         // If content is empty and no filters, just clear
         if (!newQuery && !hasFilters) {
@@ -494,9 +495,38 @@ export class SearchStore {
         // Filter params take precedence
         const hasFilters = Object.keys(this.filterParams).length > 0;
 
+        const parsedTmdbFilterKeys = Object.keys(this.parsedSearch?.tmdbParams ?? {}).filter(
+            (key) => key !== "query"
+        );
+        const uiFilterKeys = Object.keys(this.filterParams);
+        const hasEffectiveFilters = uiFilterKeys.length > 0 || parsedTmdbFilterKeys.length > 0;
+        const hasTextQuery = Boolean(this.parsedSearch?.query?.trim());
+
         // When filters are active, always use discover mode because
         // TMDB's search endpoints don't support most filter params
-        const searchMode = hasFilters ? "discover" : this.parsedSearch?.searchMode || "discover";
+        let searchMode = hasEffectiveFilters
+            ? "discover"
+            : this.parsedSearch?.searchMode || "discover";
+
+        // Person/company do not support discover endpoints in TMDB.
+        // Keep these on textual search mode when a text query exists.
+        if ((type === "person" || type === "company") && hasTextQuery) {
+            searchMode = "search";
+        }
+
+        logger.debug("buildSearchUrl mode resolution", {
+            type,
+            page,
+            hasTextQuery,
+            parsedSearchMode: this.parsedSearch?.searchMode,
+            resolvedSearchMode: searchMode,
+            hasUiFilters: hasFilters,
+            uiFilterKeys,
+            hasParsedTmdbFilters: parsedTmdbFilterKeys.length > 0,
+            parsedTmdbFilterKeys,
+            hasEffectiveFilters,
+            allowEmptySearch: this.allowEmptySearch
+        });
 
         if ((type === "person" || type === "company") && searchMode === "discover") {
             logger.warn("Building discover-mode search URL for person/company", {
@@ -635,10 +665,10 @@ export class SearchStore {
                 type === "movie"
                     ? this.movieResults
                     : type === "person"
-                        ? this.personResults
-                        : type === "company"
-                            ? this.companyResults
-                            : this.tvResults; // This line was already correct.
+                      ? this.personResults
+                      : type === "company"
+                        ? this.companyResults
+                        : this.tvResults; // This line was already correct.
             const uniqueNewItems = this.deduplicateItems(items, currentResults);
 
             if (type === "movie") {
@@ -701,10 +731,10 @@ export class SearchStore {
             type === "movie"
                 ? this.moviePage
                 : type === "person"
-                    ? this.personPage
-                    : type === "company"
-                        ? this.companyPage
-                        : this.tvPage;
+                  ? this.personPage
+                  : type === "company"
+                    ? this.companyPage
+                    : this.tvPage;
 
         try {
             const result = await this.fetchSearchResults(type, page, signal);
@@ -718,10 +748,10 @@ export class SearchStore {
                     type === "movie"
                         ? this.movieResults
                         : type === "person"
-                            ? this.personResults
-                            : type === "company"
-                                ? this.companyResults
-                                : this.tvResults;
+                          ? this.personResults
+                          : type === "company"
+                            ? this.companyResults
+                            : this.tvResults;
                 const uniqueNewItems = this.deduplicateItems(newItems, currentResults);
 
                 if (type === "movie") {

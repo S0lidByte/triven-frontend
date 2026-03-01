@@ -33,11 +33,31 @@ export const GET: RequestHandler = async ({ fetch, params, locals, url }) => {
     }
 
     const searchMode = url.searchParams.get("searchMode") || "discover";
+    const hasTextQuery = Boolean(url.searchParams.get("query")?.trim());
 
     if (isDebugLoggingEnabled) {
         logger.debug(
             `Search request: type=${type}, searchMode=${searchMode}, params=${url.searchParams.toString()}`
         );
+    }
+
+    if ((type === "person" || type === "company") && searchMode === "discover" && !hasTextQuery) {
+        logger.warn(
+            "Rejecting invalid discover-mode request for person/company without text query",
+            {
+                type,
+                searchMode,
+                hasTextQuery,
+                params: url.searchParams.toString()
+            }
+        );
+
+        return json({
+            results: [],
+            page: 1,
+            total_pages: 1,
+            total_results: 0
+        });
     }
 
     // Determine mode: if textual query is present (searchMode='search'|'hybrid'), use search endpoint.
