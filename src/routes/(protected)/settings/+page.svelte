@@ -11,7 +11,7 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import * as Tooltip from "$lib/components/ui/tooltip/index.js";
     import { Separator } from "$lib/components/ui/separator/index.js";
-    import { HelpCircle } from "lucide-svelte";
+    import HelpCircle from "@lucide/svelte/icons/help-circle";
     import { cn } from "$lib/utils";
     setShadcnContext();
 
@@ -48,7 +48,7 @@
 
 <PageShell class="h-full">
     <!-- Cognitive layout: identity → purpose → actions -->
-    <header class="mb-4 md:mb-6" role="banner">
+    <header class="mb-4 md:mb-6">
         <p class="text-muted-foreground text-sm font-medium">Admin</p>
         <h1 class="mt-1 text-3xl font-bold tracking-tight text-neutral-50">Settings</h1>
         <p class="mt-2 max-w-2xl text-neutral-400">
