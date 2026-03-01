@@ -5,7 +5,12 @@ import "@sjsf/form/fields/extra/enum-include";
 import "@sjsf/form/fields/extra/multi-enum-include";
 import "@sjsf/form/fields/extra/unknown-native-file-include";
 
-export { theme } from "@sjsf/shadcn4-theme";
+import { extendByRecord } from "@sjsf/form/lib/resolver";
+import { theme as baseTheme } from "@sjsf/shadcn4-theme";
+import ApiKeyWidget from "./api-key-widget.svelte";
+
+export const theme = extendByRecord(baseTheme, { apiKeyWidget: ApiKeyWidget });
+
 import "@sjsf/shadcn4-theme/extra-widgets/textarea-include";
 import "@sjsf/shadcn4-theme/extra-widgets/checkboxes-include";
 import "@sjsf/shadcn4-theme/extra-widgets/radio-include";

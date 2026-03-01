@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
+  '@sjsf/form': 3.3.0
   cookie: ^0.7.0
   '@lucide/svelte': ^0.575.0
   minimatch@<3.1.4: ^3.1.4
@@ -31,7 +32,7 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0(@sjsf/form@3.3.0(esm-env@1.2.2)(svelte@5.53.6))(ajv@8.18.0)
       '@sjsf/form':
-        specifier: ^3.3.0
+        specifier: 3.3.0
         version: 3.3.0(esm-env@1.2.2)(svelte@5.53.6)
       '@sjsf/lucide-icons':
         specifier: ^3.3.0
@@ -1003,13 +1004,13 @@ packages:
   '@sjsf/ajv8-validator@3.3.0':
     resolution: {integrity: sha512-GPg7A9omETwjyshd70ZYwH40IRsMm2+Af3MGfWpt0cVNPuZ9Uz1rpJBINnNR4Sm3Hmbt9g5t1ZXM7l6bES2fkg==}
     peerDependencies:
-      '@sjsf/form': ^3.3.0
+      '@sjsf/form': 3.3.0
       ajv: ^8.18.0
 
   '@sjsf/basic-theme@3.3.0':
     resolution: {integrity: sha512-JropdAU+Kc5IsYcX6SFmFDrin6SKXuxlH83bhKITzkcDKPeXXSXyTQttxNhx18+WtFEKN/d0SxgQYYSXfpLCng==}
     peerDependencies:
-      '@sjsf/form': ^3.3.0
+      '@sjsf/form': 3.3.0
       svelte: ^5.34.8
 
   '@sjsf/form@3.3.0':
@@ -1029,7 +1030,7 @@ packages:
     resolution: {integrity: sha512-9sjKQdD1n+ONrjNn71+rXg11Mwi2DYR68O9NWqkic+tX67zWF+mg+ByxVeeOu23Ut7VKkQeOSIr3AzM6yik8Ng==}
     peerDependencies:
       '@lucide/svelte': ^0.575.0
-      '@sjsf/form': ^3.3.0
+      '@sjsf/form': 3.3.0
       svelte: ^5.34.8
 
   '@sjsf/shadcn4-theme@3.3.0':
@@ -1037,7 +1038,7 @@ packages:
     peerDependencies:
       '@internationalized/date': ^3.10.0
       '@lucide/svelte': ^0.575.0
-      '@sjsf/form': ^3.3.0
+      '@sjsf/form': 3.3.0
       bits-ui: ^2.14.0
       clsx: ^2.1.0
       svelte: ^5.34.8
@@ -1050,7 +1051,7 @@ packages:
   '@sjsf/sveltekit@3.3.0':
     resolution: {integrity: sha512-2qjLpn074ykUSHu7Tryofnagqi9aS5ZmTCbrcIQf2gBOODT/u0VcVFliVoI1tvYR+scj3DiytxrLIh0CgwhazQ==}
     peerDependencies:
-      '@sjsf/form': ^3.3.0
+      '@sjsf/form': 3.3.0
       '@sveltejs/kit': ^2.48.3
       esm-env: ^1.2.0
       svelte: ^5.34.8
