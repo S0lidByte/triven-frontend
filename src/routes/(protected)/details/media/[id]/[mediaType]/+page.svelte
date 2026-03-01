@@ -507,7 +507,7 @@
                                     variant="secondary"
                                     class="border-primary/50 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary border bg-transparent px-4"
                                     title={data.mediaDetails?.details.title}
-                                    ids={data.riven?.id ? [data.riven.id.toString()] : []}
+                                    ids={[]}
                                     mediaType={data.mediaDetails?.type}
                                     externalId={data.mediaDetails?.details?.id?.toString() ?? ""}
                                     seasons={seasonData}>

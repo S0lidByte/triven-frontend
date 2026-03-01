@@ -328,6 +328,7 @@
     <svelte:element
         this={itemUrl ? "a" : "div"}
         href={itemUrl}
+        role={itemUrl ? undefined : "button"}
         class={cn(
             itemUrl && "block cursor-pointer no-underline text-foreground hover:text-foreground",
             "flex items-center rounded transition-colors relative",
@@ -356,7 +357,7 @@
         title={compact
             ? `${item.show_title}${item.season ? ` S${item.season}E${item.episode}` : ""}${!itemUrl ? " (no metadata — not clickable)" : ""}`
             : (!itemUrl ? "No metadata available — item is not clickable" : undefined)}
-        onclick={(e) => {
+        onclick={(_e: MouseEvent) => {
             // Add preventative logic here if inner buttons are added later
         }}>
         

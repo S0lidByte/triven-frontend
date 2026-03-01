@@ -18,7 +18,6 @@
 
     const meta = createMeta<ActionData, PageData>().form;
 
-    // @ts-expect-error - Schema is provided by page data
     const { form } = setupSvelteKitForm(meta, {
         ...defaults,
         icons,

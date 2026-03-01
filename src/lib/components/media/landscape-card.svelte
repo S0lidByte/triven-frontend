@@ -116,7 +116,7 @@
                             {:then ratingsData}
                                 {#if ratingsData?.scores?.length}
                                     {#each ratingsData.scores as score (score.name)}
-                                        <!-- svelte-ignore svelte/no-navigation-without-resolve -->
+                                        <!-- svelte-ignore a11y_no_static_element_interactions -->
                                         <a
                                             href={score.url}
                                             target="_blank"

@@ -107,7 +107,7 @@
 {/snippet}
 
 {#if mediaURL}
-    <!-- svelte-ignore svelte/no-navigation-without-resolve -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <a href={mediaURL} class={containerClasses}>
         {@render cardContent()}
     </a>

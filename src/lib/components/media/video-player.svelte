@@ -14,7 +14,7 @@
     let error = $state<string | null>(null);
 
     // Direct stream URL (Original method)
-    const directUrl = `/api/stream/${itemId}`;
+    const directUrl = $derived(`/api/stream/${itemId}`);
     // HLS Proxy URL
     const hlsParams = new URLSearchParams({
         pix_fmt: "yuv420p",
@@ -22,7 +22,7 @@
         level: "4.1"
         // resolution: '1920x1080' // Optional: Uncomment to force 1080p
     });
-    const hlsUrl = `/api/stream/${itemId}/hls/index.m3u8?${hlsParams.toString()}`;
+    const hlsUrl = $derived(`/api/stream/${itemId}/hls/index.m3u8?${hlsParams.toString()}`);
 
     function needsHls(): boolean {
         // Simple check: Create a dummy video and ask if it plays HEVC

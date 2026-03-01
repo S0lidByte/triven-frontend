@@ -33,7 +33,7 @@ function buildSettingsUiSchema(properties: Record<string, unknown>): UiSchemaRoo
     const order = SECTION_ORDER_AND_TITLES.map(([key]) => key).filter((k) => properties[k] !== undefined);
     return {
         "ui:order": order.length > 0 ? order : undefined
-    };
+    } as UiSchemaRoot;
 }
 
 function applySectionTitles(schema: Record<string, unknown>): Record<string, unknown> {
@@ -91,14 +91,14 @@ export const load: PageServerLoad = async ({ fetch, locals }: { fetch: typeof gl
     let schemaPayload: { schema: Record<string, unknown>; uiSchema: UiSchemaRoot };
 
     try {
-        [allSettings, schemaPayload] = await Promise.all([
+        [allSettings, schemaPayload] = (await Promise.all([
             providers.riven.GET("/api/v1/settings/get/all", {
                 baseUrl: locals.backendUrl,
                 headers: { "x-api-key": locals.apiKey },
                 fetch: fetchWithTimeout
             }),
             getSchemaAndUiSchema(locals.backendUrl, locals.apiKey, fetchWithTimeout)
-        ]);
+        ])) as [Awaited<ReturnType<typeof providers.riven.GET>>, { schema: Record<string, unknown>; uiSchema: UiSchemaRoot }];
     } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("abort")) {

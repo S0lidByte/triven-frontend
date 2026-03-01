@@ -354,7 +354,7 @@
                             <div class="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {#each (data.searchExamples ?? []).slice(currentExampleIndex, currentExampleIndex + 6) as example (example)}
                                     <button
-                                        on:click={() => {
+                                        onclick={() => {
                                             // Dispatch event for header search input
                                             window.dispatchEvent(
                                                 new CustomEvent("riven:search", {

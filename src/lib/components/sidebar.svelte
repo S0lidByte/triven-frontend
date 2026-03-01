@@ -37,7 +37,7 @@
 
     let { user } = $props();
 
-    const SidebarStore = getContext<ReturnType<typeof createSidebarStore>>("sidebarStore");
+    const SidebarStore = getContext<createSidebarStore>("sidebarStore");
 </script>
 
 <aside

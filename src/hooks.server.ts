@@ -45,8 +45,8 @@ export const betterAuthHandler: Handle = async ({ event, resolve }) => {
 };
 
 const configureLocals: Handle = async ({ event, resolve }) => {
-    event.locals.backendUrl = env.BACKEND_URL;
-    event.locals.apiKey = env.BACKEND_API_KEY;
+    event.locals.backendUrl = env.BACKEND_URL ?? "";
+    event.locals.apiKey = env.BACKEND_API_KEY ?? "";
 
     return resolve(event);
 };

@@ -10,7 +10,7 @@ import type { RivenMediaItem } from "$lib/types/riven";
 import { error } from "@sveltejs/kit";
 import { createCustomFetch } from "$lib/custom-fetch";
 import { createScopedLogger } from "$lib/logger";
-import { resolveId } from "$lib/services/resolver";
+import { resolveId, type ResolveResult } from "$lib/services/resolver";
 
 const logger = createScopedLogger("media-details");
 
@@ -104,9 +104,6 @@ async function getTraktData(fetch: typeof globalThis.fetch, mediaId: string, isM
                 params: {
                     path: {
                         id: traktSlug
-                    },
-                    query: {
-                        extended: "images"
                     }
                 },
                 fetch: fetch
@@ -204,7 +201,7 @@ export const load = (async ({ fetch, params, cookies, locals, url }) => {
                 tvdbId = Number(id);
             } else {
                 // Resolve TMDB ID to TVDB ID
-                const resolved = await normalizeFetch(
+                const resolvedRaw = await normalizeFetch(
                     resolveId({
                         from: "tmdb",
                         to: "tvdb",
@@ -215,7 +212,9 @@ export const load = (async ({ fetch, params, cookies, locals, url }) => {
                     })
                 );
 
-                if (!resolved || !resolved.resolved) {
+                const resolved =
+                    resolvedRaw && "resolved" in resolvedRaw ? (resolvedRaw as ResolveResult) : null;
+                if (!resolved?.resolved) {
                     logger.error(`Failed to resolve TMDB ID ${id} to TVDB ID`);
                     error(502, "Unable to resolve TV show ID. Please try again later.");
                 }
