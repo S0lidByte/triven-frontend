@@ -1,8 +1,3 @@
 {
-    "packages": {
-        ".": {
-            "release-type": "node",
-            "component": "riven-frontend"
-        }
-    }
+    "release-type": "node"
 }
