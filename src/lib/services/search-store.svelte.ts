@@ -499,14 +499,11 @@ export class SearchStore {
             (key) => key !== "query"
         );
         const uiFilterKeys = Object.keys(this.filterParams);
-        const hasEffectiveFilters = uiFilterKeys.length > 0 || parsedTmdbFilterKeys.length > 0;
         const hasTextQuery = Boolean(this.parsedSearch?.query?.trim());
 
         // When filters are active, always use discover mode because
         // TMDB's search endpoints don't support most filter params
-        let searchMode = hasEffectiveFilters
-            ? "discover"
-            : this.parsedSearch?.searchMode || "discover";
+        let searchMode = hasFilters ? "discover" : this.parsedSearch?.searchMode || "discover";
 
         // Person/company do not support discover endpoints in TMDB.
         // Keep these on textual search mode when a text query exists.
@@ -524,7 +521,6 @@ export class SearchStore {
             uiFilterKeys,
             hasParsedTmdbFilters: parsedTmdbFilterKeys.length > 0,
             parsedTmdbFilterKeys,
-            hasEffectiveFilters,
             allowEmptySearch: this.allowEmptySearch
         });
 
