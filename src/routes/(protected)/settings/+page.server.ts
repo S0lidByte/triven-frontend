@@ -4,34 +4,85 @@ import providers from "$lib/providers";
 import type { InitialFormData } from "@sjsf/sveltekit";
 import { createFormHandler } from "@sjsf/sveltekit/server";
 import * as defaults from "$lib/components/settings/form-defaults";
+import type { UiSchemaRoot } from "@sjsf/form";
 
-const getSchema = async (baseUrl: string, apiKey: string, fetch: typeof globalThis.fetch) => {
-    const settingsSchema = await providers.riven.GET("/api/v1/settings/schema", {
+/** Human-readable section titles and display order for cognitive layout (general → core services → infra). */
+const SECTION_ORDER_AND_TITLES: [string, string][] = [
+    ["version", "Application version"],
+    ["api_key", "API key"],
+    ["log_level", "Log level"],
+    ["enable_network_tracing", "Network tracing"],
+    ["enable_stream_tracing", "Stream tracing"],
+    ["retry_interval", "Retry interval"],
+    ["tracemalloc", "Memory tracking (debug)"],
+    ["filesystem", "Filesystem & VFS"],
+    ["updaters", "Library updaters (Plex, Jellyfin, Emby)"],
+    ["downloaders", "Downloaders (Real-Debrid, AllDebrid, etc.)"],
+    ["content", "Content lists (Trakt, Overseerr, Mdblist, etc.)"],
+    ["scraping", "Scraping"],
+    ["ranking", "Ranking"],
+    ["indexer", "Indexer"],
+    ["database", "Database"],
+    ["notifications", "Notifications"],
+    ["post_processing", "Post-processing"],
+    ["logging", "Logging"],
+    ["stream", "Streaming"]
+];
+
+function buildSettingsUiSchema(properties: Record<string, unknown>): UiSchemaRoot {
+    const order = SECTION_ORDER_AND_TITLES.map(([key]) => key).filter((k) => properties[k] !== undefined);
+    return {
+        "ui:order": order.length > 0 ? order : undefined
+    };
+}
+
+function applySectionTitles(schema: Record<string, unknown>): Record<string, unknown> {
+    const props = schema.properties as Record<string, Record<string, unknown>> | undefined;
+    if (!props) return schema;
+    const out = { ...schema, properties: { ...props } };
+    for (const [key, title] of SECTION_ORDER_AND_TITLES) {
+        if (out.properties[key]) {
+            (out.properties as Record<string, Record<string, unknown>>)[key] = {
+                ...(out.properties as Record<string, Record<string, unknown>>)[key],
+                title: (out.properties as Record<string, Record<string, unknown>>)[key].title ?? title
+            };
+        }
+    }
+    return out;
+}
+
+async function getSchemaAndUiSchema(
+    baseUrl: string,
+    apiKey: string,
+    fetch: typeof globalThis.fetch
+): Promise<{ schema: Record<string, unknown>; uiSchema: UiSchemaRoot }> {
+    const res = await providers.riven.GET("/api/v1/settings/schema", {
         baseUrl,
-        headers: {
-            "x-api-key": apiKey
-        },
+        headers: { "x-api-key": apiKey },
         fetch
     });
-    if (settingsSchema.error) {
+    if (res.error) {
         throw new Error("Failed to load settings schema");
     }
-
-    return settingsSchema.data;
-};
+    const raw = res.data as Record<string, unknown>;
+    const schema = applySectionTitles(raw);
+    const uiSchema = buildSettingsUiSchema((schema.properties as Record<string, unknown>) ?? {});
+    return { schema, uiSchema };
+}
 
 export const load: PageServerLoad = async ({ fetch, locals }: { fetch: typeof globalThis.fetch; locals: App.Locals }) => {
     if (locals.user?.role !== "admin") {
         error(403, "Forbidden");
     }
 
-    const allSettings = await providers.riven.GET("/api/v1/settings/get/all", {
-        baseUrl: locals.backendUrl,
-        headers: {
-            "x-api-key": locals.apiKey
-        },
-        fetch: fetch
-    });
+    const [allSettings, { schema, uiSchema }] = await Promise.all([
+        providers.riven.GET("/api/v1/settings/get/all", {
+            baseUrl: locals.backendUrl,
+            headers: { "x-api-key": locals.apiKey },
+            fetch
+        }),
+        getSchemaAndUiSchema(locals.backendUrl, locals.apiKey, fetch)
+    ]);
 
     if (allSettings.error) {
         error(500, "Failed to load settings");
@@ -39,8 +90,9 @@ export const load: PageServerLoad = async ({ fetch, locals }: { fetch: typeof gl
 
     return {
         form: {
-            schema: await getSchema(locals.backendUrl, locals.apiKey, fetch),
-            initialValue: allSettings.data
+            schema,
+            initialValue: allSettings.data,
+            uiSchema
         } satisfies InitialFormData
     };
 };
@@ -51,11 +103,12 @@ export const actions = {
             error(403, "Forbidden");
         }
 
+        const { schema, uiSchema } = await getSchemaAndUiSchema(locals.backendUrl, locals.apiKey, fetch);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleForm = createFormHandler<any, true>({
             ...defaults,
-            // @ts-expect-error - it's valid
-            schema: await getSchema(locals.backendUrl, locals.apiKey, fetch),
+            schema,
+            uiSchema,
             sendData: true
         });
 
