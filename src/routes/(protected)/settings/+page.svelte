@@ -2,6 +2,7 @@
     import type { FormState } from "@sjsf/form";
     import PageShell from "$lib/components/page-shell.svelte";
     import { Button } from "$lib/components/ui/button/index.js";
+    import { Badge } from "$lib/components/ui/badge/index.js";
     import * as Tooltip from "$lib/components/ui/tooltip/index.js";
     import { Separator } from "$lib/components/ui/separator/index.js";
     import {
@@ -19,6 +20,10 @@
     import { goto } from "$app/navigation";
     import { navigating, page } from "$app/stores";
     import { writable } from "svelte/store";
+    import Loader2 from "@lucide/svelte/icons/loader-2";
+    import Check from "@lucide/svelte/icons/check";
+    import AlertCircle from "@lucide/svelte/icons/alert-circle";
+    import RefreshCw from "@lucide/svelte/icons/refresh-cw";
 
     /** Form ref from keyed SettingsFormContent - updates when tab changes (remount) */
     const formStore = writable<FormState<any> | null>(null);
@@ -28,6 +33,7 @@
     let showDiscardConfirm = $state(false);
 
     function submitSettingsForm() {
+        if ($navigating) return;
         const formEl = document.querySelector(".settings-form form");
         (formEl as HTMLFormElement)?.requestSubmit();
     }
@@ -58,6 +64,13 @@
 
     /** Form store exposes isChanged (not isDirty) - use for save bar and tab-switch guard */
     const isDirty = $derived(form?.isChanged ?? false);
+    const isNavigating = $derived(Boolean($navigating));
+    const activeTab = $derived(
+        $page.data.tabs.find((t: { id: string; label: string; restartRequired?: boolean }) => t.id === $page.data.activeTabId)
+    );
+    const saveButtonLabel = $derived(
+        isNavigating ? "Saving..." : isDirty ? "Save changes" : "All changes saved"
+    );
 </script>
 
 <svelte:head>
@@ -66,22 +79,54 @@
 
 <PageShell class="h-full">
     <Tooltip.Provider>
-        <div class="mx-auto max-w-5xl px-4 md:px-6">
-            <header class="mb-4 flex flex-col gap-2 md:mb-6 md:flex-row md:items-start md:justify-between">
+        <div class="mx-auto max-w-6xl px-4 md:px-6">
+            <header class="mb-4 flex flex-col gap-3 md:mb-6 md:flex-row md:items-start md:justify-between">
                 <div>
                     <p class="text-muted-foreground text-sm font-medium">Admin</p>
-                    <h1 class="mt-1 text-3xl font-bold tracking-tight text-neutral-50">Settings</h1>
-                    <p class="mt-2 max-w-2xl text-neutral-400">
-                        Configure Riven backend. Use tabs to switch sections. Save changes when done.
+                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                        <h1 class="text-3xl font-bold tracking-tight text-neutral-50">Settings</h1>
+                        {#if activeTab}
+                            <Badge variant="outline" class="text-xs font-medium">{activeTab.label}</Badge>
+                        {/if}
+                        {#if activeTab?.restartRequired}
+                            <Badge class="bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30 text-xs font-medium">
+                                Restart required section
+                            </Badge>
+                        {/if}
+                    </div>
+                    <p class="text-muted-foreground mt-2 max-w-3xl text-sm md:text-[0.92rem]">
+                        Configure backend behavior with production-safe defaults. Keep changes focused,
+                        then save once to apply the current section.
                     </p>
                 </div>
-                <Button
-                    type="button"
-                    class="mt-2 shrink-0 md:mt-0"
-                    onclick={submitSettingsForm}
-                    disabled={!isDirty}>
-                    Save changes
-                </Button>
+                <div class="mt-2 flex items-center gap-2 md:mt-0">
+                    {#if isDirty}
+                        <div class="text-amber-500 flex items-center gap-1.5 text-xs font-medium">
+                            <AlertCircle class="size-3.5" />
+                            Unsaved changes
+                        </div>
+                    {:else}
+                        <div class="text-emerald-500 flex items-center gap-1.5 text-xs font-medium">
+                            <Check class="size-3.5" />
+                            All changes saved
+                        </div>
+                    {/if}
+                    <Button
+                        type="button"
+                        class="min-w-[11rem]"
+                        onclick={submitSettingsForm}
+                        disabled={!isDirty || isNavigating}
+                        aria-live="polite">
+                        {#if isNavigating}
+                            <Loader2 class="size-4 animate-spin" />
+                        {:else if isDirty}
+                            <AlertCircle class="size-4" />
+                        {:else}
+                            <Check class="size-4" />
+                        {/if}
+                        {saveButtonLabel}
+                    </Button>
+                </div>
             </header>
 
             <Separator class="mb-6 md:mb-8" />
@@ -113,12 +158,24 @@
                 </nav>
 
                 <!-- Right: form - keyed by activeTabId so form remounts and loads correct schema when tab changes -->
-                <div class="min-w-0 flex-1 relative">
+                <div class="relative min-w-0 flex-1 rounded-xl border border-border/70 bg-card/35 p-3 md:p-4">
+                    <div class="mb-3 flex items-center justify-between gap-2 border-b border-border/60 pb-3">
+                        <div class="flex items-center gap-1.5 text-sm font-medium text-neutral-200">
+                            <RefreshCw class={cn("size-3.5", isNavigating && "animate-spin")} />
+                            {activeTab?.label ?? "Settings"} configuration
+                        </div>
+                        <Badge variant="outline" class="text-[11px] font-medium">
+                            {isDirty ? "Draft" : "Saved"}
+                        </Badge>
+                    </div>
                     {#if $navigating}
                         <div
-                            class="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-muted/50"
+                            class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-[1px]"
                             aria-live="polite">
-                            <span class="text-muted-foreground text-sm">Loading…</span>
+                            <span class="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+                                <Loader2 class="size-4 animate-spin" />
+                                Loading section…
+                            </span>
                         </div>
                     {/if}
                     {#key $page.data.activeTabId}
@@ -130,16 +187,24 @@
             <!-- Sticky save bar when dirty -->
             {#if isDirty}
                 <div
-                    class="border-border bg-card fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-4 border-t px-4 py-3 shadow-lg md:left-auto md:right-4 md:bottom-4 md:max-w-md md:rounded-lg md:border md:shadow-xl"
+                    class="border-border bg-card/95 fixed right-0 bottom-0 left-0 z-40 flex items-center justify-between gap-4 border-t px-4 py-3 shadow-lg backdrop-blur md:right-4 md:bottom-4 md:left-auto md:max-w-md md:rounded-lg md:border md:shadow-xl"
                     role="status"
                     aria-live="polite">
-                    <span class="text-sm text-muted-foreground">You have unsaved changes</span>
+                    <div class="min-w-0">
+                        <span class="text-sm font-medium text-amber-500">Unsaved changes</span>
+                        <p class="text-muted-foreground truncate text-xs">Review and save this section to persist updates.</p>
+                    </div>
                     <div class="flex gap-2">
-                        <Button variant="outline" size="sm" onclick={() => form?.reset()}>
+                        <Button variant="outline" size="sm" onclick={() => form?.reset()} disabled={isNavigating}>
                             Discard
                         </Button>
-                        <Button size="sm" onclick={submitSettingsForm}>
-                            Save changes
+                        <Button size="sm" onclick={submitSettingsForm} disabled={isNavigating}>
+                            {#if isNavigating}
+                                <Loader2 class="size-4 animate-spin" />
+                                Saving...
+                            {:else}
+                                Save changes
+                            {/if}
                         </Button>
                     </div>
                 </div>
