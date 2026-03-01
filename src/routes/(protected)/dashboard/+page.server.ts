@@ -43,12 +43,12 @@ export const load = (async ({ fetch, locals }) => {
 
     if (downloaderInfo.error) {
         logger.error("Downloader info fetch error:", downloaderInfo.error);
-        error(500, "Unable to fetch downloader info data");
+        // Do not fail the whole dashboard; return empty downloader list so the rest of the page loads
     }
 
     return {
         statistics: statistics.data,
         services: svc.data || {},
-        downloaderInfo: downloaderInfo.data
+        downloaderInfo: downloaderInfo.error ? { services: [] } : downloaderInfo.data
     };
 }) satisfies PageServerLoad;

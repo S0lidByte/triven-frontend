@@ -70,19 +70,42 @@ async function getSchemaAndUiSchema(
     return { schema, uiSchema };
 }
 
+const SETTINGS_FETCH_TIMEOUT_MS = 20_000;
+
+function createFetchWithTimeout(timeoutMs: number = SETTINGS_FETCH_TIMEOUT_MS): typeof fetch {
+    return (input: RequestInfo | URL, init?: RequestInit) => {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeoutMs);
+        return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(id));
+    };
+}
+
 export const load: PageServerLoad = async ({ fetch, locals }: { fetch: typeof globalThis.fetch; locals: App.Locals }) => {
     if (locals.user?.role !== "admin") {
         error(403, "Forbidden");
     }
 
-    const [allSettings, { schema, uiSchema }] = await Promise.all([
-        providers.riven.GET("/api/v1/settings/get/all", {
-            baseUrl: locals.backendUrl,
-            headers: { "x-api-key": locals.apiKey },
-            fetch
-        }),
-        getSchemaAndUiSchema(locals.backendUrl, locals.apiKey, fetch)
-    ]);
+    const fetchWithTimeout = createFetchWithTimeout();
+
+    let allSettings: Awaited<ReturnType<typeof providers.riven.GET>>;
+    let schemaPayload: { schema: Record<string, unknown>; uiSchema: UiSchemaRoot };
+
+    try {
+        [allSettings, schemaPayload] = await Promise.all([
+            providers.riven.GET("/api/v1/settings/get/all", {
+                baseUrl: locals.backendUrl,
+                headers: { "x-api-key": locals.apiKey },
+                fetch: fetchWithTimeout
+            }),
+            getSchemaAndUiSchema(locals.backendUrl, locals.apiKey, fetchWithTimeout)
+        ]);
+    } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes("abort")) {
+            error(504, "Settings request timed out. Is the backend running and reachable?");
+        }
+        throw e;
+    }
 
     if (allSettings.error) {
         error(500, "Failed to load settings");
@@ -90,9 +113,9 @@ export const load: PageServerLoad = async ({ fetch, locals }: { fetch: typeof gl
 
     return {
         form: {
-            schema,
+            schema: schemaPayload.schema,
             initialValue: allSettings.data,
-            uiSchema
+            uiSchema: schemaPayload.uiSchema
         } satisfies InitialFormData
     };
 };
