@@ -145,7 +145,7 @@ export const load: PageServerLoad = async ({ url, fetch }) => {
     const form = await superValidate(url.searchParams, zod4(searchSchema));
     const parsed = parseSearchQuery(form.data.query || "");
 
-    const hasQuery = parsed.query.trim().length > 0;
+    const hasQuery = (form.data.query || "").trim().length > 0;
 
     // Fetch trending content for search examples and hero only on landing (empty query)
     let heroItems: TMDBTransformedListItem[] = [];

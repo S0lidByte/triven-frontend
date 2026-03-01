@@ -6,6 +6,39 @@ import { createFormHandler, type FormHandlerOptions } from "@sjsf/sveltekit/serv
 import * as defaults from "$lib/components/settings/form-defaults";
 import type { UiSchemaRoot } from "@sjsf/form";
 import { DEFAULT_TAB_ID, getPathsForTab, getTabById, SETTINGS_TABS } from "$lib/components/settings/sections";
+import { perfCount, startPerfMark, endPerfMark } from "$lib/perf";
+
+const SETTINGS_SCHEMA_CACHE_TTL_MS = 10 * 60 * 1000;
+
+interface SettingsSchemaCacheEntry {
+    schema: Record<string, unknown>;
+    expiresAt: number;
+}
+
+const settingsSchemaCache = new Map<string, SettingsSchemaCacheEntry>();
+
+function getSettingsSchemaCacheKey(backendUrl: string, tabId: string, paths: string): string {
+    return `${backendUrl}::${tabId}::${paths}`;
+}
+
+function getCachedSettingsSchema(cacheKey: string): Record<string, unknown> | null {
+    const cached = settingsSchemaCache.get(cacheKey);
+    if (!cached) return null;
+
+    if (cached.expiresAt <= Date.now()) {
+        settingsSchemaCache.delete(cacheKey);
+        return null;
+    }
+
+    return cached.schema;
+}
+
+function setCachedSettingsSchema(cacheKey: string, schema: Record<string, unknown>): void {
+    settingsSchemaCache.set(cacheKey, {
+        schema,
+        expiresAt: Date.now() + SETTINGS_SCHEMA_CACHE_TTL_MS
+    });
+}
 
 function buildSettingsUiSchema(properties: Record<string, unknown>, keys: string[]): UiSchemaRoot {
     const order = keys.filter((k) => properties[k] !== undefined);
@@ -164,6 +197,10 @@ export const load: PageServerLoad = async ({
     locals: App.Locals;
     url: URL;
 }) => {
+    const mark = startPerfMark("settings.load", {
+        tab: url.searchParams.get("tab") ?? DEFAULT_TAB_ID
+    });
+
     if (locals.user?.role !== "admin") {
         error(403, "Forbidden");
     }
@@ -172,6 +209,7 @@ export const load: PageServerLoad = async ({
     const tab = getTabById(tabId) ?? getTabById(DEFAULT_TAB_ID)!;
     const paths = getPathsForTab(tab);
     const keys = paths;
+    const schemaCacheKey = getSettingsSchemaCacheKey(locals.backendUrl, tab.id, paths);
 
     let schema: Record<string, unknown>;
     let initialValue: Record<string, unknown>;
@@ -195,6 +233,16 @@ export const load: PageServerLoad = async ({
 
     const props = (schema.properties ?? {}) as Record<string, unknown>;
     const uiSchema = buildSettingsUiSchema(props, tab.keys) as unknown as UiSchemaRoot;
+    setCachedSettingsSchema(schemaCacheKey, schema);
+    perfCount("settings.schema.cache.set", 1, {
+        tab: tab.id,
+        pathCount: paths.split(",").filter(Boolean).length
+    });
+
+    endPerfMark(mark, {
+        tab: tab.id,
+        propertyCount: Object.keys(props).length
+    });
 
     return {
         tabs: SETTINGS_TABS,
@@ -220,6 +268,10 @@ export const actions = {
         locals: App.Locals;
         url: URL;
     }) => {
+        const mark = startPerfMark("settings.submit", {
+            tab: url.searchParams.get("tab") ?? DEFAULT_TAB_ID
+        });
+
         if (locals.user?.role !== "admin") {
             error(403, "Forbidden");
         }
@@ -227,13 +279,28 @@ export const actions = {
         const tabId = url.searchParams.get("tab") ?? DEFAULT_TAB_ID;
         const tab = getTabById(tabId) ?? getTabById(DEFAULT_TAB_ID)!;
         const paths = getPathsForTab(tab);
+        const schemaCacheKey = getSettingsSchemaCacheKey(locals.backendUrl, tab.id, paths);
 
-        const schema = await getSchemaForKeys(
-            locals.backendUrl,
-            locals.apiKey,
-            paths,
-            fetch
-        );
+        const requestFormData = await request.formData();
+        const schemaFromCache = getCachedSettingsSchema(schemaCacheKey);
+
+        let schema: Record<string, unknown>;
+
+        if (schemaFromCache) {
+            schema = schemaFromCache;
+            perfCount("settings.schema.cache.hit", 1, { tab: tab.id });
+        } else {
+            perfCount("settings.schema.cache.miss", 1, { tab: tab.id });
+            schema = await getSchemaForKeys(
+                locals.backendUrl,
+                locals.apiKey,
+                paths,
+                fetch
+            );
+            setCachedSettingsSchema(schemaCacheKey, schema);
+            perfCount("settings.schema.cache.set", 1, { tab: tab.id });
+        }
+
         const uiSchema = buildSettingsUiSchema(
             (schema.properties ?? {}) as Record<string, unknown>,
             tab.keys
@@ -246,8 +313,12 @@ export const actions = {
             sendData: true
         } as FormHandlerOptions<any, true>);
 
-        const [form] = await handleForm(request.signal, await request.formData());
+        const [form] = await handleForm(request.signal, requestFormData);
         if (!form.isValid) {
+            endPerfMark(mark, {
+                tab: tab.id,
+                valid: false
+            });
             return fail(400, { form });
         }
 
@@ -260,8 +331,19 @@ export const actions = {
         });
 
         if (res.error) {
+            endPerfMark(mark, {
+                tab: tab.id,
+                valid: true,
+                success: false
+            });
             return fail(500, { form });
         }
+
+        endPerfMark(mark, {
+            tab: tab.id,
+            valid: true,
+            success: true
+        });
 
         return { form };
     }

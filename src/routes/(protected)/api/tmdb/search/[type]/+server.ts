@@ -1,5 +1,7 @@
 import type { RequestHandler } from "./$types";
 import { json, error } from "@sveltejs/kit";
+import { dev } from "$app/environment";
+import { env } from "$env/dynamic/public";
 import providers from "$lib/providers";
 import { transformTMDBList, type TMDBListItem } from "$lib/providers/parser";
 import { createCustomFetch } from "$lib/custom-fetch";
@@ -7,6 +9,8 @@ import { createScopedLogger } from "$lib/logger";
 import type { paths } from "$lib/providers/tmdb";
 
 const logger = createScopedLogger("tmdb-search");
+const publicLogLevel = Number.parseInt(String(env.PUBLIC_LOG_LEVEL ?? "3"), 10);
+const isDebugLoggingEnabled = dev || (!Number.isNaN(publicLogLevel) && publicLogLevel >= 4);
 
 // Extract query types from TMDB paths
 type SearchMovieQuery = paths["/3/search/movie"]["get"]["parameters"]["query"];
@@ -30,10 +34,11 @@ export const GET: RequestHandler = async ({ fetch, params, locals, url }) => {
 
     const searchMode = url.searchParams.get("searchMode") || "discover";
 
-    // Log incoming params for debugging
-    logger.debug(
-        `Search request: type=${type}, searchMode=${searchMode}, params=${url.searchParams.toString()}`
-    );
+    if (isDebugLoggingEnabled) {
+        logger.debug(
+            `Search request: type=${type}, searchMode=${searchMode}, params=${url.searchParams.toString()}`
+        );
+    }
 
     // Determine mode: if textual query is present (searchMode='search'|'hybrid'), use search endpoint.
     // If only filters are present (searchMode='discover'), use discover endpoint.
@@ -65,7 +70,9 @@ export const GET: RequestHandler = async ({ fetch, params, locals, url }) => {
             const route = ROUTE_MAP[routeKey as keyof typeof ROUTE_MAP];
             const query = { ...parsed[route.queryKey] };
 
-            logger.debug(`Route: ${routeKey}, endpoint: ${route.endpoint}, query:`, query);
+            if (isDebugLoggingEnabled) {
+                logger.debug(`Route: ${routeKey}, endpoint: ${route.endpoint}, query:`, query);
+            }
 
             if (routeKey === "tv-discover") {
                 const q = query as DiscoverTVQuery;
