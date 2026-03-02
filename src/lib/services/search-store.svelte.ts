@@ -340,7 +340,11 @@ export class SearchStore {
 
             const runFetchWithTrace = async (
                 type: "movie" | "tv" | "person" | "company"
-            ): Promise<void> => {
+            ): Promise<{
+                type: "movie" | "tv" | "person" | "company";
+                ok: boolean;
+                aborted: boolean;
+            }> => {
                 if (!this.canFetchMediaType(type)) {
                     if (type === "person") {
                         this.personHasMore = false;
@@ -351,13 +355,18 @@ export class SearchStore {
                         this.totalResultsCompany = 0;
                         this.companyResults = [];
                     }
-                    return;
+                    return { type, ok: true, aborted: false };
                 }
 
                 const startedAt = performance.now();
                 try {
                     await this.fetchMedia(type, 1, signal);
+                    return { type, ok: true, aborted: false };
                 } catch (err) {
+                    if (err instanceof Error && err.name === "AbortError") {
+                        return { type, ok: false, aborted: true };
+                    }
+
                     logger.error(`search fetch failed for media type '${type}'`, {
                         mediaType: this.mediaType,
                         rawSearchString: this.rawSearchString,
@@ -366,7 +375,8 @@ export class SearchStore {
                         filterParamKeys: Object.keys(this.filterParams),
                         error: err instanceof Error ? err.message : String(err)
                     });
-                    throw err;
+                    this.clearTypeResults(type);
+                    return { type, ok: false, aborted: false };
                 } finally {
                     logger.debug(`search fetch completed for media type '${type}'`, {
                         durationMs: Number((performance.now() - startedAt).toFixed(2)),
@@ -400,28 +410,51 @@ export class SearchStore {
                     );
                 }
 
-                await Promise.all([
+                const outcomes = await Promise.all([
                     runFetchWithTrace("movie"),
                     runFetchWithTrace("tv"),
                     runFetchWithTrace("person"),
                     runFetchWithTrace("company")
                 ]);
+
+                const movieFailed = outcomes.some(
+                    (outcome) => outcome.type === "movie" && !outcome.ok && !outcome.aborted
+                );
+                const tvFailed = outcomes.some(
+                    (outcome) => outcome.type === "tv" && !outcome.ok && !outcome.aborted
+                );
+
+                if (!signal.aborted && movieFailed && tvFailed) {
+                    this.error = "Failed to fetch movie and TV results";
+                }
             } else if (this.mediaType === "movie") {
                 this.movieResults = [];
                 this.totalResultsMovie = 0;
-                await runFetchWithTrace("movie");
+                const outcome = await runFetchWithTrace("movie");
+                if (!outcome.ok && !outcome.aborted) {
+                    this.error = "Failed to fetch movie results";
+                }
             } else if (this.mediaType === "tv") {
                 this.tvResults = [];
                 this.totalResultsTV = 0;
-                await runFetchWithTrace("tv");
+                const outcome = await runFetchWithTrace("tv");
+                if (!outcome.ok && !outcome.aborted) {
+                    this.error = "Failed to fetch TV results";
+                }
             } else if (this.mediaType === "person") {
                 this.personResults = [];
                 this.totalResultsPerson = 0;
-                await runFetchWithTrace("person");
+                const outcome = await runFetchWithTrace("person");
+                if (!outcome.ok && !outcome.aborted) {
+                    this.error = "Failed to fetch person results";
+                }
             } else if (this.mediaType === "company") {
                 this.companyResults = [];
                 this.totalResultsCompany = 0;
-                await runFetchWithTrace("company");
+                const outcome = await runFetchWithTrace("company");
+                if (!outcome.ok && !outcome.aborted) {
+                    this.error = "Failed to fetch company results";
+                }
             }
         } catch (error) {
             if (error instanceof Error && error.name === "AbortError") {
@@ -458,6 +491,37 @@ export class SearchStore {
         return uniqueItems;
     }
 
+    private clearTypeResults(type: "movie" | "tv" | "person" | "company"): void {
+        if (type === "movie") {
+            this.movieResults = [];
+            this.totalResultsMovie = 0;
+            this.movieHasMore = false;
+            this.moviePage = 1;
+            return;
+        }
+
+        if (type === "tv") {
+            this.tvResults = [];
+            this.totalResultsTV = 0;
+            this.tvHasMore = false;
+            this.tvPage = 1;
+            return;
+        }
+
+        if (type === "person") {
+            this.personResults = [];
+            this.totalResultsPerson = 0;
+            this.personHasMore = false;
+            this.personPage = 1;
+            return;
+        }
+
+        this.companyResults = [];
+        this.totalResultsCompany = 0;
+        this.companyHasMore = false;
+        this.companyPage = 1;
+    }
+
     /**
      * Set filter parameters and optionally trigger a search
      */
@@ -491,8 +555,7 @@ export class SearchStore {
      * Build the search endpoint URL for a given type and page
      */
     private buildSearchUrl(type: "movie" | "tv" | "person" | "company", page: number): string {
-        // Merge parsed search params with filter params
-        // Filter params take precedence
+        // v1.2-compatible mode forcing: only explicit UI filter panel state forces discover mode.
         const hasFilters = Object.keys(this.filterParams).length > 0;
 
         const parsedTmdbFilterKeys = Object.keys(this.parsedSearch?.tmdbParams ?? {}).filter(
@@ -501,9 +564,15 @@ export class SearchStore {
         const uiFilterKeys = Object.keys(this.filterParams);
         const hasTextQuery = Boolean(this.parsedSearch?.query?.trim());
 
-        // When filters are active, always use discover mode because
-        // TMDB's search endpoints don't support most filter params
-        let searchMode = hasFilters ? "discover" : this.parsedSearch?.searchMode || "discover";
+        const parsedSearchMode = this.parsedSearch?.searchMode;
+        const normalizedParsedSearchMode =
+            parsedSearchMode === "search" ||
+            parsedSearchMode === "discover" ||
+            parsedSearchMode === "hybrid"
+                ? parsedSearchMode
+                : "discover";
+
+        let searchMode = hasFilters ? "discover" : normalizedParsedSearchMode;
 
         // Person/company do not support discover endpoints in TMDB.
         // Keep these on textual search mode when a text query exists.
@@ -534,16 +603,48 @@ export class SearchStore {
             });
         }
 
-        const params = {
+        const combinedParams: Record<string, string | number | boolean> = {
             ...(this.parsedSearch?.tmdbParams || {}),
-            ...this.filterParams,
+            ...this.filterParams
+        };
+
+        const params: Record<string, string | number | boolean> = {
             page,
             searchMode
         };
 
-        // Remove 'query' param when using discover mode (it's not supported)
-        if (searchMode === "discover") {
-            delete params.query;
+        if (type === "person" || type === "company") {
+            // Guardrail: person/company routes are text-search only.
+            // Do not forward movie/tv discover params.
+            if (hasTextQuery) {
+                params.query = this.parsedSearch?.query ?? "";
+            }
+
+            if (typeof combinedParams.include_adult === "boolean") {
+                params.include_adult = combinedParams.include_adult;
+            }
+
+            if (typeof combinedParams.language === "string" && combinedParams.language.trim()) {
+                params.language = combinedParams.language;
+            }
+
+            const droppedKeys = Object.keys(combinedParams).filter(
+                (key) => key !== "query" && key !== "include_adult" && key !== "language"
+            );
+
+            if (droppedKeys.length > 0) {
+                logger.debug("Dropped unsupported person/company params", {
+                    type,
+                    droppedKeys
+                });
+            }
+        } else {
+            Object.assign(params, combinedParams);
+
+            // Remove 'query' param when using discover mode (it's not supported)
+            if (searchMode === "discover") {
+                delete params.query;
+            }
         }
 
         const searchParams = new URLSearchParams();
