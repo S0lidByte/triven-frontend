@@ -567,8 +567,8 @@ export class SearchStore {
         const parsedSearchMode = this.parsedSearch?.searchMode;
         const normalizedParsedSearchMode =
             parsedSearchMode === "search" ||
-            parsedSearchMode === "discover" ||
-            parsedSearchMode === "hybrid"
+                parsedSearchMode === "discover" ||
+                parsedSearchMode === "hybrid"
                 ? parsedSearchMode
                 : "discover";
 
@@ -694,10 +694,26 @@ export class SearchStore {
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to fetch ${type}: ${response.statusText}`);
+            let errorDetail = response.statusText;
+            try {
+                const errorJson = await response.json();
+                errorDetail = errorJson.message || errorJson.error || errorDetail;
+            } catch {
+                // Not JSON, probably a redirect or HTML error page
+            }
+            throw new Error(`Failed to fetch ${type}: ${errorDetail} (${response.status})`);
         }
 
-        return response.json();
+        try {
+            return await response.json();
+        } catch (err) {
+            logger.error(`Failed to parse JSON for ${type} search result`, {
+                status: response.status,
+                contentType: response.headers.get("content-type"),
+                error: err instanceof Error ? err.message : String(err)
+            });
+            throw new Error(`Failed to parse ${type} search results. Received non-JSON response.`);
+        }
     }
 
     private async fetchMedia(
@@ -762,10 +778,10 @@ export class SearchStore {
                 type === "movie"
                     ? this.movieResults
                     : type === "person"
-                      ? this.personResults
-                      : type === "company"
-                        ? this.companyResults
-                        : this.tvResults; // This line was already correct.
+                        ? this.personResults
+                        : type === "company"
+                            ? this.companyResults
+                            : this.tvResults; // This line was already correct.
             const uniqueNewItems = this.deduplicateItems(items, currentResults);
 
             if (type === "movie") {
@@ -828,10 +844,10 @@ export class SearchStore {
             type === "movie"
                 ? this.moviePage
                 : type === "person"
-                  ? this.personPage
-                  : type === "company"
-                    ? this.companyPage
-                    : this.tvPage;
+                    ? this.personPage
+                    : type === "company"
+                        ? this.companyPage
+                        : this.tvPage;
 
         try {
             const result = await this.fetchSearchResults(type, page, signal);
@@ -845,10 +861,10 @@ export class SearchStore {
                     type === "movie"
                         ? this.movieResults
                         : type === "person"
-                          ? this.personResults
-                          : type === "company"
-                            ? this.companyResults
-                            : this.tvResults;
+                            ? this.personResults
+                            : type === "company"
+                                ? this.companyResults
+                                : this.tvResults;
                 const uniqueNewItems = this.deduplicateItems(newItems, currentResults);
 
                 if (type === "movie") {
