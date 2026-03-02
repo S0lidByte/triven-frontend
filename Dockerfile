@@ -2,6 +2,7 @@
 FROM node:24-alpine AS frontend
 WORKDIR /app
 COPY . .
+RUN apk add --no-cache python3 make g++
 RUN npm install -g pnpm && pnpm install
 RUN pnpm run build && pnpm prune --prod
 
