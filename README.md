@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="https://github.com/rivenmedia/riven">
+  <a href="https://github.com/S0lidByte/CineFlow">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/rivenmedia/riven/main/assets/riven-light.png">
       <img alt="riven" src="https://raw.githubusercontent.com/rivenmedia/riven/main/assets/riven-dark.png">
