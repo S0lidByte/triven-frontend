@@ -155,9 +155,9 @@
     <title>Settings - Riven</title>
 </svelte:head>
 
-<PageShell class="h-full">
+<PageShell class="h-full px-4 md:px-6 lg:px-8">
     <Tooltip.Provider>
-        <div class="mx-auto max-w-6xl px-4 md:px-6">
+        <div class="w-full">
             <!-- ── Page header ─────────────────────────────────────────────── -->
             <header
                 class="mb-4 flex flex-col gap-3 md:mb-6 md:flex-row md:items-start md:justify-between">
@@ -242,7 +242,7 @@
             <div class="flex flex-col gap-6 lg:flex-row lg:gap-8">
                 <!-- ── Tab navigation ──────────────────────────────────────── -->
                 <nav
-                    class="flex shrink-0 flex-row flex-wrap gap-1 lg:flex-col lg:flex-nowrap lg:gap-0.5"
+                    class="flex shrink-0 flex-row flex-wrap gap-1 lg:w-52 lg:flex-col lg:flex-nowrap lg:gap-0.5 xl:w-60"
                     aria-label="Settings sections">
                     {#each $page.data.tabs as tab (tab.id)}
                         {@const IconComponent = ICON_MAP[tab.icon] as Component | undefined}
