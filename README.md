@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  Built with performance, flexibility, and automation in mind.
+  Built with performance, Security, flexibility, and automation in mind.
 </p>
 
 ---
