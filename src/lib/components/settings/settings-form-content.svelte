@@ -47,6 +47,7 @@
 
     const { form } = setupSvelteKitForm(meta, {
         ...defaults,
+        schema: $page.data.form.schema,
         icons,
         delayedMs: 500,
         timeoutMs: 30000,

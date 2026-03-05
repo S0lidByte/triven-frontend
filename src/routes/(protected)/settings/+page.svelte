@@ -306,7 +306,7 @@
 
                     <!-- Keyed so components fully remount on tab change -->
                     {#key $page.data.activeTabId}
-                        {#if currentTab?.custom && $page.data.activeTabId === "library-profiles"}
+                        {#if activeTab?.custom && $page.data.activeTabId === "library-profiles"}
                             <LibraryProfilesPanel
                                 profiles={$page.data.customData?.profiles ?? {}} />
                         {:else}
@@ -317,7 +317,7 @@
             </div>
 
             <!-- ── Sticky save bar (shown only when SJSF form is dirty and not on custom tabs) ─────────── -->
-            {#if isDirty && !currentTab?.custom}
+            {#if isDirty && !activeTab?.custom}
                 <div
                     class="border-border bg-card/95 fixed right-0 bottom-0 left-0 z-40 flex items-center justify-between gap-4 border-t px-4 py-3 shadow-lg backdrop-blur md:right-4 md:bottom-4 md:left-auto md:max-w-md md:rounded-lg md:border md:shadow-xl"
                     role="status"
