@@ -56,6 +56,10 @@ function buildSettingsUiSchema(properties: Record<string, unknown>, keys: string
     if (keys.includes("api_key")) {
         ui["api_key"] = { "ui:components": { textWidget: "apiKeyWidget" } };
     }
+    // library_profiles has its own dedicated page at /library-profiles — hide here to avoid duplication.
+    if (keys.includes("filesystem")) {
+        ui["library_profiles"] = { "ui:widget": "hidden" };
+    }
     return ui as UiSchemaRoot;
 }
 
