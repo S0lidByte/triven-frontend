@@ -1,5 +1,5 @@
 import type { Actions, PageServerLoad } from "./$types";
-import { error, fail, redirect } from "@sveltejs/kit";
+import { error, fail } from "@sveltejs/kit";
 import providers from "$lib/providers";
 import type { InitialFormData } from "@sjsf/sveltekit";
 import { createFormHandler, type FormHandlerOptions } from "@sjsf/sveltekit/server";

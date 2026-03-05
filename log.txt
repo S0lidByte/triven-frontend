@@ -1,0 +1,20 @@
+0e09d19 chore: remove temporary debug text files
+4983148 chore: fix all ESLint and Prettier formatting errors
+ab86457 fix(frontend): resolve SSE duplication, Svelte warnings, and CI pipeline
+2c45ed1 fix(frontend): gate Request More button and remove dead retry fallback in item-request
+387d478 fix(frontend): consolidate string utilities, fix NaN year bug, and improve Hail Mary fallback logic
+d82b2eb chore(main): release riven-frontend 1.2.0-beta.1 (#31)
+a22cf04 chore: trigger release-please after label reconciliation
+f38f3ba fix(ci): align release-please manifest, config, and changelog; sync version to v1.2.0-beta.0
+6edfc7e fix(frontend): implement title similarity and Hail Mary fallback for ID resolution
+0d4263b fix: manual version bump to 1.2.0-beta.2 to unstick release-please
+2019564 chore: trigger release-please with updated permissions
+f386d2b fix: fine-tune settings robustness and release-please tagging
+d44722c fix(settings): prevent client-side crash during navigation by adding defensive checks
+b4c6b11 fix: harden release-please config and include prerelease support
+fd04bbb fix: resolve settings navigation, TV show details resolution, and align release-please
+b2cf077 fix(frontend): resolve 503 error and implement TVDB ID resolution fallback
+88cd214 fix(details): resolve 500 error on person page by mapping TVDB IDs to TMDB
+0007d34 fix(ci): trigger release please
+0ebc3ab fix(search): relax rate limits, fix SW caching and add diagnostics
+07937e4 fix(search): improve search reliability, mobile performance and UI states

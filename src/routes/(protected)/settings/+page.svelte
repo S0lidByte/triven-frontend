@@ -32,7 +32,6 @@
     } from "$lib/components/ui/alert-dialog/index.js";
     import SettingsFormContent from "$lib/components/settings/settings-form-content.svelte";
     import LibraryProfilesPanel from "$lib/components/settings/library-profiles-panel.svelte";
-    import { setContext } from "svelte";
     import { cn } from "$lib/utils";
     import { goto } from "$app/navigation";
     import { resolve } from "$app/paths";

@@ -1,0 +1,23 @@
+
+> riven-frontend@1.2.0-beta.1 check E:\Dev\Triven_riven-fork\Triven_frontend
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: e:\Dev\Triven_riven-fork\Triven_frontend
+Getting Svelte diagnostics...
+
+e:\Dev\Triven_riven-fork\Triven_frontend\[32msrc\lib\components\poster.svelte[39m:59:23
+[31mError[39m: Argument of type '[never]' is not assignable to parameter of type 'never'. (ts)
+[36m    <a
+        href={resolve([35mmediaURL as unknown as Parameters<typeof resolve>[0][36m)}
+        class="absolute inset-0 z-10"[39m
+
+e:\Dev\Triven_riven-fork\Triven_frontend\[32msrc\lib\components\settings\library-profiles-panel.svelte[39m:48:80
+[33mWarn[39m: This reference only captures the initial value of `profiles`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m    let { profiles = {} }: { profiles?: Record<string, LibraryProfile> } = $props();
+    let localProfiles = $state<Record<string, LibraryProfile>>(structuredClone([35mprofiles[36m));
+    const initialJson = $derived(JSON.stringify(profiles));[39m
+
+====================================
+[31msvelte-check found 1 error and 1 warning in 2 files
+[39mÔÇëELIFECYCLEÔÇë Command failed with exit code 1.

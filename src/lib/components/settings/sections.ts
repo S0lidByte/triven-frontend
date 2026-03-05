@@ -55,7 +55,8 @@ export const SETTINGS_TABS: SectionTab[] = [
         id: "updaters",
         label: "Library Updaters",
         icon: "library",
-        description: "Configure library update providers (e.g. Plex, Emby, Jellyfin) and sync intervals.",
+        description:
+            "Configure library update providers (e.g. Plex, Emby, Jellyfin) and sync intervals.",
         keys: ["updaters"]
     },
     {

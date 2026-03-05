@@ -1,0 +1,23 @@
+
+E:\Dev\Triven_riven-fork\Triven_frontend\src\lib\components\poster.svelte
+  59:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Dev\Triven_riven-fork\Triven_frontend\src\lib\providers\parser.ts
+   312:27  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   435:33  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   865:11  error  'ParsedShowSeason' is defined but never used  @typescript-eslint/no-unused-vars
+  1198:36  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  1207:26  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  1300:40  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  1318:48  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  1321:18  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  1328:18  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  1360:18  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+E:\Dev\Triven_riven-fork\Triven_frontend\src\lib\result.ts
+  157:14  error  '_' is defined but never used  @typescript-eslint/no-unused-vars
+  276:14  error  '_' is defined but never used  @typescript-eslint/no-unused-vars
+  478:14  error  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+Ô£û 14 problems (14 errors, 0 warnings)
+

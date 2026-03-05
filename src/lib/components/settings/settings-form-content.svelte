@@ -25,7 +25,7 @@
     import { Alert, AlertDescription, AlertTitle } from "$lib/components/ui/alert/index.js";
     import AlertCircle from "@lucide/svelte/icons/alert-circle";
     import { get } from "svelte/store";
-    import { navigating, page } from "$app/stores";
+    import { page } from "$app/stores";
     import { getTabById } from "./sections";
 
     interface Props {

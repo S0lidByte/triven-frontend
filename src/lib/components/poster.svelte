@@ -56,7 +56,7 @@
 
     <!-- Poster link: resolve() required for sub-path deployments (e.g. /riven/) -->
     <a
-        href={(resolve as (path: string) => string)(mediaURL)}
+        href={resolve(mediaURL as "/")}
         class="absolute inset-0 z-10"
         aria-label={title || "View details"}></a>
 

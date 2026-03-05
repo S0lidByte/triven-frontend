@@ -1,0 +1,48 @@
+Loading svelte-check in workspace: e:\Dev\Triven_riven-fork\Triven_frontend
+Getting Svelte diagnostics...
+
+e:\Dev\Triven_riven-fork\Triven_frontend\[32msrc\lib\components\settings\settings-form-content.svelte[39m:48:47
+[31mError[39m: Argument of type '{ icons: Resolver<Record<"remove-object-property" | "remove-array-item" | "copy-array-item" | "move-array-item-up" | "move-array-item-down", any>, { 'move-array-item-up': () => ReturnType<import("svelte").Snippet>; 'move-array-item-down': () => ReturnType<import("svelte").Snippet>; 'remove-array-item': () => ReturnT...' is not assignable to parameter of type 'SvelteKitFormSetupOptions<SvelteKitFormMeta<ActionData, PageData, "form", SchemaValue, unknown, ({ idPrefix: string; updateData: boolean; errors: readonly ValidationError[]; } & ValidFormData<...>) | ({ ...; } & InvalidFormData<...>)>>'.
+  Property 'schema' is missing in type '{ icons: Resolver<Record<"remove-object-property" | "remove-array-item" | "copy-array-item" | "move-array-item-up" | "move-array-item-down", any>, { 'move-array-item-up': () => ReturnType<import("svelte").Snippet>; 'move-array-item-down': () => ReturnType<import("svelte").Snippet>; 'remove-array-item': () => ReturnT...' but required in type '{ schema: Schema; }'. (ts)
+[36m
+    const { form } = setupSvelteKitForm(meta, [35m{
+        ...defaults,
+        icons,
+        delayedMs: 500,
+        timeoutMs: 30000,
+        onSuccess: (result: { type: string }) => {
+            if (result.type === "success") {
+                const tabId = get(page).url.searchParams.get("tab") ?? "general";
+                const tab = getTabById(tabId);
+                if (tab?.restartRequired) {
+                    toast.success("Settings saved. Some changes may take effect after restart.");
+                } else {
+                    toast.success("Settings saved");
+                }
+                saveStatus = "success";
+            } else {
+                toast.error("Failed to save settings");
+                saveStatus = "error";
+            }
+        },
+        onFailure: () => {
+            toast.error("Something went wrong while saving settings");
+            saveStatus = "error";
+        }
+    }[36m);[39m
+
+e:\Dev\Triven_riven-fork\Triven_frontend\[32msrc\routes\(protected)\settings\+page.svelte[39m:309:30
+[31mError[39m: Cannot find name 'currentTab'. (ts)
+[36m                    {#key $page.data.activeTabId}
+                        {#if [35mcurrentTab[36m?.custom && $page.data.activeTabId === "library-profiles"}
+                            <LibraryProfilesPanel[39m
+
+e:\Dev\Triven_riven-fork\Triven_frontend\[32msrc\routes\(protected)\settings\+page.svelte[39m:320:30
+[31mError[39m: Cannot find name 'currentTab'. (ts)
+[36m            <!-- ÔöÇÔöÇ Sticky save bar (shown only when SJSF form is dirty and not on custom tabs) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ -->
+            {#if isDirty && ![35mcurrentTab[36m?.custom}
+                <div[39m
+
+====================================
+[31msvelte-check found 3 errors and 1 warning in 3 files
+[39m
