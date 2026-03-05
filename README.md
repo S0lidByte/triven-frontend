@@ -1,191 +1,211 @@
-<div align="center">
-  <a href="https://github.com/S0lidByte/CineFlow">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/rivenmedia/riven/main/assets/riven-light.png">
-      <img alt="riven" src="https://raw.githubusercontent.com/rivenmedia/riven/main/assets/riven-dark.png">
-    </picture>
-  </a>
-</div>
+<p align="center">
+  <img src="https://github.com/S0lidByte/CineFlow/blob/main/assets/Cineflow-Logo.png" alt="CineFlow" width="280">
+</p>
 
-<div align="center">
-  <a href="https://github.com/rivenmedia/riven/stargazers"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/rivenmedia/riven?label=Riven+Backend"></a>
-    <a href="https://github.com/rivenmedia/riven-frontend/stargazers"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/rivenmedia/riven-frontend?label=Riven+Frontend"></a>
-  <a href="https://github.com/rivenmedia/riven/issues"><img alt="Issues" src="https://img.shields.io/github/issues/rivenmedia/riven-frontend" /></a>
-  <a href="https://github.com/rivenmedia/riven/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/rivenmedia/riven-frontend"></a>
-  <a href="https://github.com/rivenmedia/riven/graphs/contributors-frontend"><img alt="Contributors" src="https://img.shields.io/github/contributors/rivenmedia/riven-frontend" /></a>
-  <a href="https://discord.riven.tv"><img alt="Discord" src="https://img.shields.io/badge/Join%20discord-8A2BE2" /></a>
-</div>
+<h3 align="center">Modern media automation — stream torrent-based content directly to your media server.</h3>
 
-## Riven Frontend
-
-This repository contains the frontend for Riven. It is build with [SvelteKit](https://kit.svelte.dev/).
+<p align="center">
+  <a href="https://github.com/S0lidByte/CineFlow/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/S0lidByte/CineFlow?style=flat-square&color=f5a623"></a>
+  <a href="https://github.com/S0lidByte/CineFlow/issues"><img alt="Issues" src="https://img.shields.io/github/issues/S0lidByte/CineFlow?style=flat-square"></a>
+  <a href="https://github.com/S0lidByte/CineFlow/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/S0lidByte/CineFlow?style=flat-square"></a>
+  <a href="https://github.com/S0lidByte/CineFlow/graphs/contributors"><img alt="Contributors" src="https://img.shields.io/github/contributors/S0lidByte/CineFlow?style=flat-square"></a>
+  <a href="https://todo"><img alt="Discord" src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
+</p>
 
 ---
 
-## Table Of Contents
+## What is CineFlow?
 
-- [Running the frontend](#running-the-frontend)
-    - [Using docker-compose (recommended)](#using-docker-compose-recommended)
-    - [Manual installation](#manual-installation)
-    - [Environment variables](#environment-variables)
-- [Developing](#developing)
-    - [Generating API schema & types](#generating-api-schema--types)
-    - [Database schemas and migrations & Authentication](#database-schemas-and-migrations--authentication)
+CineFlow is a self-hosted media automation platform that bridges Debrid providers, content sources, and scrapers to deliver seamless streaming directly to your media server — no manual downloading required.
+
+Originally forked from [Riven](https://github.com/rivenmedia/riven), CineFlow has evolved into its own project with a new vision focused on **modularity**, **reliability**, and **long-term maintainability**. We're grateful to the original Riven contributors for their foundational work.
+
+---
+
+## Supported Services
+
+| Category | Services |
+|----------|----------|
+| **Debrid Providers** | Real-Debrid, AllDebrid |
+| **Content Sources** | Plex Watchlist, Overseerr, Mdblist, Listrr, Trakt |
+| **Scrapers** | Comet, Jackett, Torrentio, Orionoid, Mediafusion, Prowlarr, Zilean, Rarbg |
+| **Media Servers** | Plex, Jellyfin, Emby |
+
+---
+
+## Table of Contents
+
+- [Self Hosted](#self-hosted)
+  - [Installation](#installation)
+  - [Plex Setup](#plex-setup)
+  - [Troubleshooting](#troubleshooting)
+- [VFS & Caching](#cineflow-vfs-and-caching)
 - [Contributing](#contributing)
-    - [Submitting Changes](#submitting-changes)
-    - [Code Formatting](#code-formatting)
-- [Contributors](#contributors)
-- [Star History](#star-history)
-
-## Running the frontend
-
-To run the frontend, you need to have the backend running. You can find the backend [here](https://github.com/rivenmedia/riven)
-
-### Using docker-compose (recommended)
-
-Make sure you have docker and docker-compose installed on your system.
-
-Edit the [`docker-compose.yml`](./docker-compose.yml) (make sure to replace the environment variables with your own) file to match your setup:
-
-Then run the following command:
-
-```bash
-docker-compose up -d
-```
-
-It will start the frontend container called `riven-frontend` on port `3000`.
-
-### Manual installation
-
-Make sure you have pnpm installed on your system.
-
-Install the dependencies:
-
-```bash
-pnpm install
-```
-
-Then run the following command:
-
-```bash
-pnpm run build
-```
-
-It will build the frontend in the `build` directory.
-
-Then run the following command:
-
-```bash
-ORIGIN=http://localhost:3000 node build
-```
-
-It will start the frontend on port `3000`.
-
-### Environment variables
-
-Refer to the [`.env.example`](./.env.example) file for the list of environment variables required to run the frontend.
+- [License](#license)
 
 ---
 
-### Developing
+## Self Hosted
 
-First install dependencies with `pnpm install`. Then create `.env` with same content as `.env.example` and fill in the values. Then start the development server:
+### Installation
 
-> [!NOTE]  
-> It is recommended to use latest LTS version of Node.js. If using `pnpm` you can run `pnpm env use --global lts` to switch to the latest LTS version.
+Pick a directory on your host that CineFlow will use as its mount point. Throughout this guide it is referenced as:
 
-```bash
-pnpm run dev
+```
+/path/to/cineflow/mount
 ```
 
-#### Generating API schema & types
+#### 1. Configure Docker Compose
 
-To update Backend API schema & types, run:
+Copy `docker-compose.yml` into your local compose file and update the volume paths to match your environment:
 
-```bash
-pnpm run generate-api
+```yaml
+volumes:
+  - /path/to/cineflow/data:/cineflow/data
+  - /path/to/cineflow/mount:/mount:rshared,z
 ```
 
-To update TMDB/TVDB provider types, run the commands in [`/src/lib/providers/index.ts`](./src/lib/providers/index.ts).
+> **Important:** Always include `:rshared,z` when mounting `/mount` inside containers to ensure correct mount propagation.
 
-To update Trakt provider types, run the commands in [`/scripts/trakt-b2s.ts`](./scripts/trakt-b2s.ts). Optionally if remote trakt spec is updated, replace [`/scripts/trakt.apib`](./scripts/trakt.apib) with the latest from [Trakt API description document](https://trakt.docs.apiary.io/api-description-document)
+---
 
-#### Database schemas and migrations & Authentication
+#### 2. Create and Share the Mount Directory
 
-We use [Better-Auth](https://better-auth.dev/) for authentication and user management, and [Drizzle ORM](https://drizzle.team/) for database management. Better-Auth is also configured to use Drizzle ORM as its database layer.
-
-The database schemas are defined in [`src/lib/server/schema`](./src/lib/server/schema) and migrations are in [`/drizzle`](./drizzle).
-
-Drizzle config is in [`drizzle.config.ts`](./drizzle.config.ts) and db connection is in [`src/lib/server/db`](./src/lib/server/db.ts).
-
-Better-Auth config is duplicated at [`better-auth.config.ts`](./better-auth.config.ts) for CLI usage and [`src/lib/server/auth.ts`](./src/lib/server/auth.ts) for runtime usage. This is due to the limitation of Better-Auth CLI not being able to read SvelteKit's environment variables.
-
-This codebase uses the "Runtime Migrations" approach ([option 4](https://orm.drizzle.team/docs/migrations)) of Drizzle ORM, which means migrations are run automatically on server start (ran in init function of [`src/hooks.server.ts`](./src/hooks.server.ts)).
-
-Now, schema for auth is generated by Better-Auth CLI and output to [`src/lib/server/schema/ba-auth.ts`](./src/lib/server/schema/ba-auth.ts). To update the schema file after changing Better-Auth config, run:
+Run these commands once per boot:
 
 ```bash
-pnpm run ba:generate
+sudo mkdir -p /path/to/cineflow/mount
+sudo mount --bind /path/to/cineflow/mount /path/to/cineflow/mount
+sudo mount --make-rshared /path/to/cineflow/mount
 ```
 
-Then to create a new migration file based on the updated schema, run:
+Verify propagation:
 
 ```bash
-pnpm run db:generate
+findmnt -T /path/to/cineflow/mount -o TARGET,PROPAGATION
 ```
 
-Now, to apply the migration to the database, simply restart the server and it will run the migration automatically.
+Expected output: `shared` or `rshared`
 
-If you edit schema files or add new schema files (not auth related), you can run the following command to generate a new migration file based on schema changes:
+---
+
+#### 3. Persist on Boot (Optional)
+
+**Option A — systemd unit**
+
+Create `/etc/systemd/system/cineflow-bind-shared.service`:
+
+```ini
+[Unit]
+Description=Make CineFlow data bind mount shared
+After=local-fs.target
+Before=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/mount --bind /path/to/cineflow/mount /path/to/cineflow/mount
+ExecStart=/usr/bin/mount --make-rshared /path/to/cineflow/mount
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable it:
 
 ```bash
-pnpm run db:generate
+sudo systemctl enable --now cineflow-bind-shared.service
 ```
 
-Again, to apply the migration to the database, simply restart the server.
+**Option B — fstab**
 
-It's not recommended to use `pnpm run db:pull`, since it outputs migration along with single schema & relation file, which are moved to `src/lib/server/schema` managed by the [`/scripts/drizzle_pull.sh`](./scripts/drizzle_pull.sh) script. This overwrites the schema & relation files (not the better-auth schema file) every time it's run.
+```
+/path/to/cineflow/mount  /path/to/cineflow/mount  none  bind,rshared  0  0
+```
+
+---
+
+### Plex Setup
+
+CineFlow currently expects the following Plex library layout:
+
+| Library Type | Category Names |
+|-------------|----------------|
+| Movies | `movies`, `anime_movies` |
+| Shows | `shows`, `anime_shows` |
+
+> These category names may become fully configurable in a future release.
+
+---
+
+### Troubleshooting
+
+#### Plex shows an empty `/mount` after CineFlow restarts
+
+This is almost always a mount propagation or container startup order issue. Work through the following checks:
+
+**1. Re-apply host mount propagation**
+
+```bash
+sudo mount --bind /path/to/cineflow/mount /path/to/cineflow/mount
+sudo mount --make-rshared /path/to/cineflow/mount
+findmnt -T /path/to/cineflow/mount -o TARGET,PROPAGATION
+```
+
+**2. Check propagation inside the Plex container**
+
+```bash
+docker exec -it plex sh -c 'findmnt -T /mount -o TARGET,PROPAGATION,OPTIONS,FSTYPE'
+```
+
+Expected: `rslave` or `rshared`
+
+**3. Verify your Docker Compose Plex volume**
+
+```yaml
+- /path/to/cineflow/mount:/mount:rslave,z
+```
+
+**4. Clear stale FUSE mounts**
+
+If CineFlow crashed or exited unexpectedly:
+
+```bash
+sudo fusermount -uz /path/to/cineflow/mount || sudo umount -l /path/to/cineflow/mount
+```
+
+Then restart CineFlow.
+
+---
+
+## CineFlow VFS and Caching
+
+CineFlow ships with a built-in virtual filesystem (VFS) optimised for streaming, intelligent caching, and media organisation.
+
+| Setting | Description |
+|---------|-------------|
+| `cache_dir` | Directory where cached data is stored |
+| `cache_max_size_mb` | Maximum total cache size in MB |
+| `chunk_size_mb` | Size of each CDN request chunk |
+| `fetch_ahead_chunks` | Number of chunks prefetched ahead of playback |
+| `ttl_seconds` | Optional TTL-based expiration for cached blocks |
+
+By default, CineFlow uses **LRU eviction** — the least recently used cache blocks are automatically removed when space runs low. Set `ttl_seconds` to switch to time-based expiration instead.
 
 ---
 
 ## Contributing
 
-We welcome contributions from the community! To ensure a smooth collaboration, please follow these guidelines:
+Contributions are welcome! Before opening a PR, please read:
 
-### Submitting Changes
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — development setup, branch conventions, and code guidelines
+- [GitHub Issues](https://github.com/S0lidByte/CineFlow/issues) — bug reports and feature requests
+- [Discord](https://todo) — questions, discussion, and community support
 
-- Open an Issue: For major changes, start by opening an issue to discuss your proposed modifications. This helps us understand your intentions and provide feedback early in the process.
-
-- Pull Requests: Once your changes are ready, submit a pull request. Ensure your code adheres to our coding standards and passes all tests.
-
-### Code Formatting
-
-- **Frontend**: We use [Prettier](https://prettier.io/) for code formatting. Run prettier on your code before submitting. You can use the following command:
-
-```bash
-pnpm run format
-```
-
-- **Line Endings**: Use CRLF line endings unless the file is a shell script or another format that requires LF line endings.
+All commits should follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
 
 ---
 
-## Contributors
+## License
 
-Thanks goes to these wonderful people
-
-<a href="https://github.com/rivenmedia/riven-frontend/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=rivenmedia/riven-frontend" />
-</a>
-
----
-
-## Star History
-
-<a href="https://www.star-history.com/#rivenmedia/riven&rivenmedia/riven-frontend&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=rivenmedia/riven,rivenmedia/riven-frontend&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=rivenmedia/riven,rivenmedia/riven-frontend&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=rivenmedia/riven,rivenmedia/riven-frontend&type=date&legend=top-left" />
- </picture>
-</a>
+CineFlow is licensed under the **GNU GPLv3**. See the [`LICENSE`](LICENSE) file for full details.
