@@ -1,6 +1,7 @@
 <script lang="ts">
     import { browser } from "$app/environment";
     import { page } from "$app/state";
+    import { resolve } from "$app/paths";
     import { replaceState } from "$app/navigation";
     import { type PageProps } from "./$types";
     import type { ParsedShowDetails } from "$lib/providers/parser";
@@ -266,8 +267,6 @@
     );
 </script>
 
-\n\n<!-- eslint-disable svelte/no-navigation-without-resolve -->
-
 {#snippet sectionHeading(title: string)}
     <div class="mb-4 flex items-center gap-3">
         <div class="bg-primary h-6 w-1 rounded-full shadow-[0_0_10px_rgba(var(--primary),0.5)]">
@@ -297,9 +296,8 @@
             <Carousel.Content class="-ml-3">
                 {#each items as item (item.id)}
                     <Carousel.Item class="basis-auto pl-3">
-                        <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
                         <a
-                            href="/details/media/{item.id}/{item.media_type}"
+                            href={resolve(`/details/media/${item.id}/${item.media_type}` as "/")}
                             class="group relative block opacity-80 transition-all duration-300 hover:opacity-100">
                             <PortraitCard
                                 title={item.title}

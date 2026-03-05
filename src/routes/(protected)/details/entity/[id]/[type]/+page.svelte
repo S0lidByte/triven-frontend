@@ -1,5 +1,6 @@
 <script lang="ts">
     import { type PageProps } from "./$types";
+    import { resolve } from "$app/paths";
     import { fade, fly } from "svelte/transition";
     import { cubicOut } from "svelte/easing";
     import { Badge } from "$lib/components/ui/badge/index.js";
@@ -123,10 +124,6 @@
         return result || null;
     }
 </script>
-
-\n\n<!-- eslint-disable svelte/no-navigation-without-resolve -->
-
-<!-- eslint-disable svelte/no-navigation-without-resolve -->
 
 <svelte:head>
     <title>{data.entity.name} - Riven</title>
@@ -425,9 +422,8 @@
 
 {#snippet creditList(credits: typeof movieCredits)}
     {#each credits as credit, index (`${credit.id}-${index}`)}
-        <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
         <a
-            href="/details/media/{credit.id}/{credit.media_type}"
+            href={resolve(`/details/media/${credit.id}/${credit.media_type}` as "/")}
             class="group relative block opacity-80 transition-all duration-300 hover:scale-105 hover:opacity-100">
             <PortraitCard
                 title={credit.title}

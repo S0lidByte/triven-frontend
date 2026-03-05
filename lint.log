@@ -1,0 +1,19 @@
+
+> riven-frontend@1.2.0-beta.1 lint E:\Dev\Triven_riven-fork\Triven_frontend
+> prettier --check . && eslint .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+E:\Dev\Triven_riven-fork\Triven_frontend\src\lib\components\tmdb-now-playing.svelte
+  301:57  error  Unexpected href link without resolve()  svelte/no-navigation-without-resolve
+
+E:\Dev\Triven_riven-fork\Triven_frontend\src\routes\(protected)\details\entity\[id]\[type]\+page.svelte
+  426:13  error  Unexpected href link without resolve()  svelte/no-navigation-without-resolve
+
+E:\Dev\Triven_riven-fork\Triven_frontend\src\routes\(protected)\details\media\[id]\[mediaType]\+page.svelte
+  300:29  error  Unexpected href link without resolve()  svelte/no-navigation-without-resolve
+
+Ô£û 3 problems (3 errors, 0 warnings)
+
+ÔÇëELIFECYCLEÔÇë Command failed with exit code 1.

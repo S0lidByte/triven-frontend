@@ -181,10 +181,6 @@
     }
 </script>
 
-\n\n<!-- eslint-disable svelte/no-navigation-without-resolve -->
-
-<!-- eslint-disable svelte/no-navigation-without-resolve -->
-
 {#if Array.isArray(data) && data.length > 0}
     <div class="border-border/50 relative overflow-hidden rounded-2xl border shadow-2xl">
         <Carousel.Root
@@ -300,7 +296,7 @@
                                         {#if ratings[item.id]?.scores?.length}
                                             <div class="ml-2 flex items-center gap-4">
                                                 {#each ratings[item.id]!.scores! as score (score.name)}
-                                                    <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+                                                    <!-- eslint-disable svelte/no-navigation-without-resolve -->
                                                     <a
                                                         href={score.url}
                                                         target="_blank"
@@ -317,6 +313,7 @@
                                                             class="text-xs font-bold text-white drop-shadow-md"
                                                             >{score.score}</span>
                                                     </a>
+                                                    <!-- eslint-enable svelte/no-navigation-without-resolve -->
                                                 {/each}
                                             </div>
                                         {:else if item.vote_average}
