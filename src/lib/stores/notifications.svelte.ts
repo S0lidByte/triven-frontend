@@ -103,43 +103,56 @@ export class NotificationStore {
 
         this.#connectionStatus = "connecting";
 
-        this.#connection = source("/api/notifications", {
-            open: () => {
-                this.#connectionStatus = "connected";
-                logger.info("Notification stream connected");
-            },
-            close: ({ connect }) => {
-                if (this.#connectionStatus !== "disconnected") {
+        try {
+            this.#connection = source("/api/notifications", {
+                open: () => {
+                    this.#connectionStatus = "connected";
+                    logger.info("Notification stream connected");
+                },
+                close: ({ connect }) => {
+                    if (this.#connectionStatus !== "disconnected") {
+                        this.#connectionStatus = "error";
+                        logger.info("Notification stream closed, reconnecting...");
+                        // Auto-reconnect
+                        setTimeout(() => {
+                            try {
+                                if (this.#connectionStatus !== "disconnected") {
+                                    connect();
+                                }
+                            } catch (e) {
+                                logger.error("Notification reconnect failed:", e);
+                            }
+                        }, 1000);
+                    }
+                },
+                error: (error) => {
+                    logger.error("Notification stream error:", error);
                     this.#connectionStatus = "error";
-                    logger.info("Notification stream closed, reconnecting...");
-                    // Auto-reconnect
-                    setTimeout(() => {
-                        if (this.#connectionStatus !== "disconnected") {
-                            connect();
-                        }
-                    }, 1000);
                 }
-            },
-            error: (error) => {
-                logger.error("Notification stream error:", error);
-                this.#connectionStatus = "error";
-            }
-        });
-
-        const notificationValue = this.#connection
-            .select("notification")
-            .json<NotificationEvent>(({ error, previous }) => {
-                if (error) {
-                    logger.warn("Failed to parse notification:", error);
-                }
-                return previous;
             });
 
-        this.#unsubscribe = notificationValue.subscribe((value) => {
-            if (value) {
-                this.#handleNotificationEvent(value);
-            }
-        });
+            const notificationValue = this.#connection
+                .select("notification")
+                .json<NotificationEvent>(({ error, previous }) => {
+                    if (error) {
+                        logger.warn("Failed to parse notification:", error);
+                    }
+                    return previous;
+                });
+
+            this.#unsubscribe = notificationValue.subscribe((value) => {
+                try {
+                    if (value) {
+                        this.#handleNotificationEvent(value);
+                    }
+                } catch (e) {
+                    logger.error("Failed to handle notification event:", e);
+                }
+            });
+        } catch (e) {
+            logger.error("Failed to establish notification connection:", e);
+            this.#connectionStatus = "error";
+        }
     }
 
     disconnect() {

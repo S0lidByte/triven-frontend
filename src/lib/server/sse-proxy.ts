@@ -91,7 +91,9 @@ export function createSseProxy({ locals, path, eventName, logScope }: SseProxyOp
 
                 for (const line of lines) {
                     if (line.startsWith("data: ")) {
-                        const data = line.slice(6);
+                        const data = line.slice(6).trim();
+                        // Skip empty data lines to prevent JSON.parse crashes on the client
+                        if (!data) continue;
                         const { error: emitError } = emit(eventName, data);
                         if (emitError) {
                             reader.cancel();
