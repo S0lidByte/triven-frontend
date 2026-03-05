@@ -31,6 +31,8 @@
         AlertDialogTitle
     } from "$lib/components/ui/alert-dialog/index.js";
     import SettingsFormContent from "$lib/components/settings/settings-form-content.svelte";
+    import LibraryProfilesPanel from "$lib/components/settings/library-profiles-panel.svelte";
+    import { setContext } from "svelte";
     import { cn } from "$lib/utils";
     import { goto } from "$app/navigation";
     import { resolve } from "$app/paths";
@@ -248,48 +250,28 @@
                     aria-label="Settings sections">
                     {#each $page.data.tabs as tab (tab.id)}
                         {@const IconComponent = ICON_MAP[tab.icon] as Component | undefined}
-                        {@const isActive = tab.href
-                            ? $page.url.pathname === resolve(tab.href)
-                            : $page.data.activeTabId === tab.id}
-                        {#if tab.href}
-                            <a
-                                href={resolve(tab.href)}
-                                class={cn(
-                                    "flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
-                                    isActive
-                                        ? "bg-muted text-foreground"
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                )}
-                                aria-current={isActive ? "page" : undefined}>
-                                {#if IconComponent}
-                                    <IconComponent class="size-4 shrink-0" />
-                                {/if}
-                                <span>{tab.label}</span>
-                            </a>
-                        {:else}
-                            <button
-                                type="button"
-                                class={cn(
-                                    "flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
-                                    isActive
-                                        ? "bg-muted text-foreground"
-                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                )}
-                                onclick={() => handleTabClick(tab.id)}
-                                aria-current={isActive ? "true" : undefined}>
-                                {#if IconComponent}
-                                    <IconComponent class="size-4 shrink-0" />
-                                {/if}
-                                <span>{tab.label}</span>
-                                {#if tab.restartRequired}
-                                    <span
-                                        class="ml-auto rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
-                                        title="Changes require a backend restart">
-                                        Restart
-                                    </span>
-                                {/if}
-                            </button>
-                        {/if}
+                        <button
+                            type="button"
+                            class={cn(
+                                "flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
+                                $page.data.activeTabId === tab.id
+                                    ? "bg-muted text-foreground"
+                                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                            )}
+                            onclick={() => handleTabClick(tab.id)}
+                            aria-current={$page.data.activeTabId === tab.id ? "true" : undefined}>
+                            {#if IconComponent}
+                                <IconComponent class="size-4 shrink-0" />
+                            {/if}
+                            <span>{tab.label}</span>
+                            {#if tab.restartRequired}
+                                <span
+                                    class="ml-auto rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
+                                    title="Changes require a backend restart">
+                                    Restart
+                                </span>
+                            {/if}
+                        </button>
                     {/each}
                 </nav>
 
@@ -322,15 +304,20 @@
                         </div>
                     {/if}
 
-                    <!-- Keyed so SettingsFormContent fully remounts on tab change -->
+                    <!-- Keyed so components fully remount on tab change -->
                     {#key $page.data.activeTabId}
-                        <SettingsFormContent {formStore} />
+                        {#if currentTab?.custom && $page.data.activeTabId === "library-profiles"}
+                            <LibraryProfilesPanel
+                                profiles={$page.data.customData?.profiles ?? {}} />
+                        {:else}
+                            <SettingsFormContent {formStore} />
+                        {/if}
                     {/key}
                 </div>
             </div>
 
-            <!-- ── Sticky save bar (shown only when form is dirty) ─────────── -->
-            {#if isDirty}
+            <!-- ── Sticky save bar (shown only when SJSF form is dirty and not on custom tabs) ─────────── -->
+            {#if isDirty && !currentTab?.custom}
                 <div
                     class="border-border bg-card/95 fixed right-0 bottom-0 left-0 z-40 flex items-center justify-between gap-4 border-t px-4 py-3 shadow-lg backdrop-blur md:right-4 md:bottom-4 md:left-auto md:max-w-md md:rounded-lg md:border md:shadow-xl"
                     role="status"

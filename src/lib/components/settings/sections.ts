@@ -19,11 +19,11 @@ export interface SectionTab {
     /** Whether changes in this section require backend restart to take effect */
     restartRequired?: boolean;
     /**
-     * If set, clicking this tab navigates to the given href instead of
-     * switching to a SJSF-rendered tab. Used for pages with custom UIs
-     * (e.g. Library Profiles) that live under a separate route.
+     * When true, the settings page renders a custom panel instead of the SJSF
+     * auto-generated form. The panel component is responsible for its own data
+     * loading and save actions.
      */
-    href?: string;
+    custom?: boolean;
 }
 
 /** Tab groupings: General, Filesystem, Library Updaters, Downloaders, Content, Scraping, Infra */
@@ -64,7 +64,7 @@ export const SETTINGS_TABS: SectionTab[] = [
         icon: "book-open",
         description: "Organize media into separate library folders based on metadata rules.",
         keys: [],
-        href: "/library-profiles"
+        custom: true
     },
     {
         id: "downloaders",

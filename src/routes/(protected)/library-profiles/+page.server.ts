@@ -1,5 +1,5 @@
 import type { Actions, PageServerLoad } from "./$types";
-import { error, fail } from "@sveltejs/kit";
+import { error, fail, redirect } from "@sveltejs/kit";
 import providers from "$lib/providers";
 import { createScopedLogger } from "$lib/logger";
 
@@ -38,22 +38,12 @@ async function saveFilesystem(
     if (res.error) throw new Error("Failed to save filesystem settings");
 }
 
-export const load: PageServerLoad = async ({ fetch, locals }) => {
+export const load: PageServerLoad = async ({ locals }) => {
     if (locals.user?.role !== "admin") error(403, "Forbidden");
 
-    logger.info("Library profiles load started");
-
-    try {
-        const filesystem = await fetchFilesystem(locals.backendUrl, locals.apiKey, fetch);
-        const profiles = (filesystem["library_profiles"] ?? {}) as Record<string, unknown>;
-        logger.info("Library profiles load completed", { count: Object.keys(profiles).length });
-        return { profiles, filesystem };
-    } catch (e) {
-        logger.error("Library profiles load failed", {
-            error: e instanceof Error ? e.message : String(e)
-        });
-        error(503, "Failed to load library profiles from backend.");
-    }
+    // The dedicated page is now embedded within Settings. Redirect any direct
+    // visits to the new location.
+    redirect(301, "/settings?tab=library-profiles");
 };
 
 export const actions = {

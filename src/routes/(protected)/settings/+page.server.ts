@@ -16,6 +16,22 @@ import { createScopedLogger } from "$lib/logger";
 
 const logger = createScopedLogger("settings-page-server");
 
+const PATHS = "filesystem";
+async function fetchFilesystem(
+    baseUrl: string,
+    apiKey: string,
+    fetchFn: typeof globalThis.fetch
+): Promise<Record<string, unknown>> {
+    const res = await providers.riven.GET("/api/v1/settings/get/{paths}", {
+        baseUrl,
+        headers: { "x-api-key": apiKey },
+        fetch: fetchFn,
+        params: { path: { paths: PATHS } }
+    });
+    if (res.error) throw new Error("Failed to load filesystem settings");
+    return (res.data as Record<string, unknown>)["filesystem"] as Record<string, unknown>;
+}
+
 const SETTINGS_SCHEMA_CACHE_TTL_MS = 10 * 60 * 1000;
 
 interface SettingsSchemaCacheEntry {
@@ -256,10 +272,26 @@ export const load: PageServerLoad = async ({
     const keys = paths;
     const schemaCacheKey = getSettingsSchemaCacheKey(locals.backendUrl, tab.id, paths);
 
-    // Link-tabs (e.g. Library Profiles) have no backend keys and are handled by
-    // their own dedicated page — redirect there rather than attempting an empty fetch.
-    if (tab.href) {
-        redirect(302, tab.href);
+    // Custom tabs rely on external/custom layout components, skip the SJSF loader
+    if (tab.custom) {
+        if (tab.id === "library-profiles") {
+            try {
+                const filesystem = await fetchFilesystem(locals.backendUrl, locals.apiKey, fetch);
+                const profiles = (filesystem["library_profiles"] ?? {}) as Record<string, unknown>;
+                return {
+                    tabs: SETTINGS_TABS,
+                    activeTabId: tab.id,
+                    paths,
+                    customData: {
+                        profiles
+                    }
+                };
+            } catch (e) {
+                logger.error("Failed to load library profiles for settings tab", { error: e });
+                error(503, "Failed to load library profiles.");
+            }
+        }
+        error(404, "Custom tab not found");
     }
 
     logger.info("Settings page load started", {
