@@ -8,8 +8,14 @@ import "@sjsf/form/fields/extra/unknown-native-file-include";
 import { extendByRecord } from "@sjsf/form/lib/resolver";
 import { theme as baseTheme } from "@sjsf/shadcn4-theme";
 import ApiKeyWidget from "./api-key-widget.svelte";
+import SettingsDescription from "./settings-description.svelte";
+import SettingsLabel from "./settings-label.svelte";
 
-export const theme = extendByRecord(baseTheme, { apiKeyWidget: ApiKeyWidget });
+export const theme = extendByRecord(baseTheme, {
+    apiKeyWidget: ApiKeyWidget,
+    description: SettingsDescription,
+    label: SettingsLabel
+});
 
 import "@sjsf/shadcn4-theme/extra-widgets/textarea-include";
 import "@sjsf/shadcn4-theme/extra-widgets/checkboxes-include";

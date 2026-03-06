@@ -37,33 +37,20 @@
     import { resolve } from "$app/paths";
     import { navigating, page } from "$app/stores";
     import { writable } from "svelte/store";
+    import { ICON_MAP } from "$lib/components/settings/icon-map";
+    import SettingsSearch from "$lib/components/settings/settings-search.svelte";
+    import Kbd from "$lib/components/ui/kbd/kbd.svelte";
+    import SearchIcon from "@lucide/svelte/icons/search";
 
     // Lucide icons used in the tab nav and header
     import Loader2 from "@lucide/svelte/icons/loader-2";
     import Check from "@lucide/svelte/icons/check";
     import AlertCircle from "@lucide/svelte/icons/alert-circle";
     import RefreshCw from "@lucide/svelte/icons/refresh-cw";
-    import Settings from "@lucide/svelte/icons/settings";
-    import FolderTree from "@lucide/svelte/icons/folder-tree";
-    import Library from "@lucide/svelte/icons/library";
-    import Download from "@lucide/svelte/icons/download";
-    import FileText from "@lucide/svelte/icons/file-text";
-    import ScanSearch from "@lucide/svelte/icons/scan-search";
-    import Server from "@lucide/svelte/icons/server";
     import ChevronRight from "@lucide/svelte/icons/chevron-right";
-    import BookOpen from "@lucide/svelte/icons/book-open";
 
     /** Maps the icon name stored in {@link SectionTab.icon} to a Svelte component. */
-    const ICON_MAP: Record<string, Component> = {
-        settings: Settings,
-        "folder-tree": FolderTree,
-        library: Library,
-        download: Download,
-        "file-text": FileText,
-        "scan-search": ScanSearch,
-        server: Server,
-        "book-open": BookOpen
-    };
+    // Imported ICON_MAP from $lib/components/settings/icon-map
 
     /**
      * Shared store for the active form state.
@@ -138,9 +125,12 @@
         )
     );
 
+    let searchOpen = $state(false);
+
     /**
      * Global keyboard shortcut handler.
      * Ctrl+S (Windows/Linux) or Cmd+S (macOS) saves when the form is dirty.
+     * Ctrl+K (Windows/Linux) or Cmd+K (macOS) opens the settings search palette.
      */
     function handleKeydown(e: KeyboardEvent): void {
         if ((e.ctrlKey || e.metaKey) && e.key === "s") {
@@ -148,6 +138,10 @@
             if (isDirty && !isNavigating) {
                 submitSettingsForm();
             }
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+            e.preventDefault();
+            searchOpen = !searchOpen;
         }
     }
 </script>
@@ -234,9 +228,31 @@
                             </Button>
                         </Tooltip.Trigger>
                         <Tooltip.Content side="bottom">
-                            Save ({navigator?.platform?.includes("Mac") ? "⌘S" : "Ctrl+S"})
+                            Save <Kbd
+                                class="border-primary-foreground/20 text-primary-foreground ml-1 bg-transparent"
+                                >{navigator?.platform?.includes("Mac") ? "⌘S" : "Ctrl+S"}</Kbd>
                         </Tooltip.Content>
                     </Tooltip.Root>
+
+                    <button
+                        class="text-muted-foreground hover:text-foreground border-border/50 bg-background/50 hover:bg-muted/50 hidden items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors md:flex"
+                        onclick={() => (searchOpen = true)}>
+                        <SearchIcon class="size-3.5" />
+                        Search settings
+                        <Kbd class="ml-1"
+                            >{navigator?.platform?.includes("Mac") ? "⌘K" : "Ctrl+K"}</Kbd>
+                    </button>
+                </div>
+
+                <div class="mt-4 flex items-center justify-between md:hidden">
+                    <button
+                        class="text-muted-foreground hover:text-foreground border-border/50 flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs"
+                        onclick={() => (searchOpen = true)}>
+                        <SearchIcon class="size-3.5" />
+                        Search settings
+                        <Kbd class="ml-1"
+                            >{navigator?.platform?.includes("Mac") ? "⌘K" : "Ctrl+K"}</Kbd>
+                    </button>
                 </div>
             </header>
 
@@ -249,28 +265,34 @@
                     aria-label="Settings sections">
                     {#each $page.data.tabs as tab (tab.id)}
                         {@const IconComponent = ICON_MAP[tab.icon] as Component | undefined}
-                        <button
-                            type="button"
-                            class={cn(
-                                "flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors",
-                                $page.data.activeTabId === tab.id
-                                    ? "bg-muted text-foreground"
-                                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                            )}
-                            onclick={() => handleTabClick(tab.id)}
-                            aria-current={$page.data.activeTabId === tab.id ? "true" : undefined}>
-                            {#if IconComponent}
-                                <IconComponent class="size-4 shrink-0" />
-                            {/if}
-                            <span>{tab.label}</span>
-                            {#if tab.restartRequired}
-                                <span
-                                    class="ml-auto rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
-                                    title="Changes require a backend restart">
-                                    Restart
-                                </span>
-                            {/if}
-                        </button>
+                        <Tooltip.Root>
+                            <Tooltip.Trigger
+                                class={cn(
+                                    "flex w-full cursor-pointer items-center gap-2 rounded-md border-l-2 px-3 py-2 text-left text-sm font-medium transition-colors",
+                                    $page.data.activeTabId === tab.id
+                                        ? "border-primary bg-muted text-foreground pl-[10px]"
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground border-transparent pl-[10px]"
+                                )}
+                                onclick={() => handleTabClick(tab.id)}
+                                aria-current={$page.data.activeTabId === tab.id
+                                    ? "true"
+                                    : undefined}>
+                                {#if IconComponent}
+                                    <IconComponent class="size-4 shrink-0" />
+                                {/if}
+                                <span>{tab.label}</span>
+                                {#if tab.restartRequired}
+                                    <span
+                                        class="ml-auto rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
+                                        title="Changes require a backend restart">
+                                        Restart
+                                    </span>
+                                {/if}
+                            </Tooltip.Trigger>
+                            <Tooltip.Content side="right" sideOffset={8}>
+                                {tab.description}
+                            </Tooltip.Content>
+                        </Tooltip.Root>
                     {/each}
                 </nav>
 
@@ -372,5 +394,8 @@
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        <!-- ── Settings Command Palette ────────────────────────────────────── -->
+        <SettingsSearch bind:open={searchOpen} />
     </Tooltip.Provider>
 </PageShell>
