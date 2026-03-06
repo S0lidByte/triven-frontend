@@ -2,9 +2,8 @@
 name: Bug report
 about: Create a report to help us improve
 title: "[BUG] Title"
-labels: ''
-assignees: ''
-
+labels: ""
+assignees: ""
 ---
 
 **Describe the bug**
