@@ -22,7 +22,9 @@ jobs:
             startsWith(github.event.head_commit.message, 'fix') ||
             startsWith(github.event.head_commit.message, 'feat') ||
             startsWith(github.event.head_commit.message, 'build') ||
-            startsWith(github.event.head_commit.message, 'ci')
+            startsWith(github.event.head_commit.message, 'ci') ||
+            startsWith(github.event.head_commit.message, 'chore') ||
+            startsWith(github.event.head_commit.message, 'refactor')
         permissions:
             contents: write
             packages: write
