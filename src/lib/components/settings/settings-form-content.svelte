@@ -54,7 +54,7 @@
     const { form } = setupSvelteKitForm(meta, {
         ...defaults,
         schema: (pageData.form?.schema ?? { type: "object" }) as any,
-        data: pageData.form ? pageData : undefined,
+        data: pageData.form ? pageData : { form: { schema: { type: "object" } } },
         action: actionData,
         icons,
         delayedMs: 500,

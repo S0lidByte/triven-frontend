@@ -308,12 +308,15 @@
                         {#if activeTab?.custom && $page.data.activeTabId === "library-profiles"}
                             <LibraryProfilesPanel
                                 profiles={$page.data.customData?.profiles ?? {}} />
-                        {:else}
+                        {:else if $page.data.form}
                             <SettingsFormContent
                                 {formStore}
                                 pageData={$page.data as import("./$types").PageData}
                                 actionData={$page.form ?? undefined}
                                 activeTabId={$page.data.activeTabId} />
+                        {:else}
+                            <!-- Render nothing while SvelteKit finishes transitioning to /settings -->
+                            <div class="h-full w-full opacity-0"></div>
                         {/if}
                     {/key}
                 </div>
