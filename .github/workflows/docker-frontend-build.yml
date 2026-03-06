@@ -45,8 +45,8 @@ jobs:
               uses: docker/metadata-action@v5
               with:
                   images: |
-                      ghcr.io/s0lidbyte/triven-frontend
-                      coldspirit/triven-frontend
+                      ghcr.io/s0lidbyte/cineflow-frontend
+                      coldspirit/cineflow-frontend
                   flavor: |
                       latest=auto
                   tags: |

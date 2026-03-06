@@ -11,8 +11,8 @@ concurrency:
     cancel-in-progress: true
 
 env:
-    REGISTRY_IMAGE_GHCR: ghcr.io/s0lidbyte/triven-frontend
-    REGISTRY_IMAGE_DOCKERHUB: coldspirit/triven-frontend
+    REGISTRY_IMAGE_GHCR: ghcr.io/s0lidbyte/cineflow-frontend
+    REGISTRY_IMAGE_DOCKERHUB: coldspirit/cineflow-frontend
 
 jobs:
     build:
