@@ -133,7 +133,10 @@ export function createSseProxy({ locals, path, eventName, logScope }: SseProxyOp
             if (err?.name === "AbortError") {
                 // Expected abort, ignore
             } else if (
-                (err?.cause?.code && ["ECONNREFUSED", "ENOTFOUND", "ETIMEDOUT", "UND_ERR_SOCKET"].includes(err.cause.code)) ||
+                (err?.cause?.code &&
+                    ["ECONNREFUSED", "ENOTFOUND", "ETIMEDOUT", "UND_ERR_SOCKET"].includes(
+                        err.cause.code
+                    )) ||
                 err?.cause?.message === "other side closed" ||
                 err?.message === "other side closed" ||
                 err?.message === "terminated"
