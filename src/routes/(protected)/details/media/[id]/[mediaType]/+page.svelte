@@ -69,6 +69,32 @@
     };
     const getExternal = (key: string) => externalMeta[key.replace("_id", "")];
 
+    function toExternalUrl(value: string | null | undefined): string | null {
+        if (!value) return null;
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+
+        if (/^https?:\/\//i.test(trimmed)) {
+            return trimmed;
+        }
+
+        if (/^\/\//.test(trimmed)) {
+            return `https:${trimmed}`;
+        }
+
+        // Accept plain domains like example.com/path and normalize to https
+        if (/^[a-z0-9.-]+\.[a-z]{2,}(?:\/.*)?$/i.test(trimmed)) {
+            return `https://${trimmed}`;
+        }
+
+        return null;
+    }
+
+    function openExternal(url: string): void {
+        if (!browser) return;
+        window.open(url, "_blank", "noopener,noreferrer");
+    }
+
     let showTrailerOverride = $state(false);
     const showTrailer = $derived(showTrailerOverride && data.mediaDetails?.details?.trailer);
 
@@ -803,17 +829,30 @@
                                     easing: cubicOut
                                 }}>
                                 {#each ratingsData.scores as score (score.name)}
-                                    <a
-                                        href={resolve(score.url as unknown as "/")}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 transition-colors">
-                                        {#if score.image}<img
-                                                src="/rating-logos/{score.image}"
-                                                alt={score.name}
-                                                class="h-6 w-6 object-contain" />{/if}
-                                        <span class="text-base font-semibold">{score.score}</span>
-                                    </a>
+                                    {@const scoreUrl = toExternalUrl(score.url)}
+                                    {#if scoreUrl}
+                                        <button
+                                            type="button"
+                                            onclick={() => openExternal(scoreUrl)}
+                                            class="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 transition-colors">
+                                            {#if score.image}<img
+                                                    src="/rating-logos/{score.image}"
+                                                    alt={score.name}
+                                                    class="h-6 w-6 object-contain" />{/if}
+                                            <span class="text-base font-semibold"
+                                                >{score.score}</span>
+                                        </button>
+                                    {:else}
+                                        <div
+                                            class="text-muted-foreground inline-flex items-center gap-2">
+                                            {#if score.image}<img
+                                                    src="/rating-logos/{score.image}"
+                                                    alt={score.name}
+                                                    class="h-6 w-6 object-contain" />{/if}
+                                            <span class="text-base font-semibold"
+                                                >{score.score}</span>
+                                        </div>
+                                    {/if}
                                 {/each}
                             </div>
                         {:else if ratingsLoading}
@@ -1125,15 +1164,16 @@
                                             >Links</span>
                                         <div class="flex flex-wrap gap-2">
                                             {#if data.mediaDetails?.details.homepage}
-                                                <a
-                                                    href={resolve(
-                                                        data.mediaDetails.details
-                                                            .homepage as unknown as "/"
-                                                    )}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    class="text-foreground rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white/10"
-                                                    >Website</a>
+                                                {@const homepageUrl = toExternalUrl(
+                                                    data.mediaDetails.details.homepage
+                                                )}
+                                                {#if homepageUrl}
+                                                    <button
+                                                        type="button"
+                                                        onclick={() => openExternal(homepageUrl)}
+                                                        class="text-foreground rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white/10"
+                                                        >Website</button>
+                                                {/if}
                                             {/if}
                                             {#if data.mediaDetails?.details.imdb_id}
                                                 <a
@@ -1148,18 +1188,26 @@
                                             {#if data.mediaDetails?.details.external_ids}
                                                 {@const validLinks = Object.entries(
                                                     data.mediaDetails.details.external_ids
-                                                ).filter(
-                                                    ([key, value]) => value && getExternal(key)
-                                                )}
-                                                {#each validLinks as [key, value] (key)}
-                                                    <a
-                                                        href={resolve(
-                                                            `${getExternal(key).url}${value}` as unknown as "/"
-                                                        )}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
+                                                )
+                                                    .map(([key, value]) => {
+                                                        const external = getExternal(key);
+                                                        const href = external
+                                                            ? toExternalUrl(
+                                                                  `${external.url}${value}`
+                                                              )
+                                                            : null;
+
+                                                        return external && value && href
+                                                            ? { key, label: external.name, href }
+                                                            : null;
+                                                    })
+                                                    .filter((entry) => entry !== null)}
+                                                {#each validLinks as link (link.key)}
+                                                    <button
+                                                        type="button"
+                                                        onclick={() => openExternal(link.href)}
                                                         class="text-foreground rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white/10"
-                                                        >{getExternal(key).name}</a>
+                                                        >{link.label}</button>
                                                 {/each}
                                             {/if}
                                         </div>
